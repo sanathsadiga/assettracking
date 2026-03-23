@@ -1,0 +1,206 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Print Barcodes - Asset Tracking System{% endblock %}
+
+{% block content %}
+<style>
+    @media print {
+        /* Hide all non-print elements */
+        .no-print {
+            display: none !important;
+        }
+        nav {
+            display: none !important;
+        }
+        .sidebar {
+            display: none !important;
+        }
+        footer {
+            display: none !important;
+        }
+        .container-fluid {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .row {
+            margin: 0 !important;
+        }
+        .content-area {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+        }
+        html {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        /* Show only barcode sheet */
+        .barcode-sheet {
+            display: block !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    }
+    
+    .barcode-sheet {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 10px;
+    }
+    
+    .barcode-item {
+        border: 2px solid #333;
+        padding: 20px;
+        text-align: center;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    
+    .barcode-number {
+        font-size: 28px;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+        letter-spacing: 2px;
+        margin: 15px 0;
+        border: 2px solid #000;
+        padding: 10px;
+    }
+    
+    .barcode-label {
+        font-size: 12px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .asset-name {
+        font-size: 14px;
+        font-weight: 500;
+        margin: 10px 0;
+        word-wrap: break-word;
+    }
+    
+    .asset-cost {
+        font-size: 11px;
+        color: #333;
+    }
+    
+    .summary-info {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="no-print">
+    <div class="page-title mb-4">
+        <h1>Print Barcodes</h1>
+        <p class="text-muted">
+            {% if is_bulk %}
+            Printing barcodes for {{ assets|length }} items created in bulk
+            {% else %}
+            Print barcodes for selected assets
+            {% endif %}
+        </p>
+    </div>
+
+    {% if error %}
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle"></i> <strong>Error:</strong> {{ error }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    {% if assets %}
+    <div class="summary-info">
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Total Items:</strong> {{ assets|length }}
+            </div>
+            <div class="col-md-4">
+                <strong>Cost per Item:</strong> ₹{{ assets.0.purchase_cost }}
+            </div>
+            <div class="col-md-4">
+                <strong>Total Value:</strong> 
+                {% with total=assets.0.purchase_cost|add:assets|length %}
+                ₹{{ total }}
+                {% endwith %}
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <strong>Assets:</strong>
+                {% for asset in assets %}
+                    <span class="badge bg-primary">{{ asset.asset_id }}</span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Print Barcodes
+        </button>
+        <button onclick="window.history.back()" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </button>
+        <a href="{% url 'tracker:asset_list' %}" class="btn btn-info">
+            <i class="bi bi-list"></i> View All Assets
+        </a>
+    </div>
+
+    <div class="alert alert-info">
+        <strong>📋 Print Instructions:</strong>
+        <ul class="mb-0 mt-2">
+            <li>Click "Print Barcodes" button above</li>
+            <li>Select your printer and paper size</li>
+            <li>Recommended: A4 paper, 100-120 GSM</li>
+            <li>Each barcode item is 3 per page</li>
+            <li>Cut along the borders</li>
+            <li>Paste on each asset</li>
+        </ul>
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> No assets selected for printing.
+        <a href="{% url 'tracker:bulk_add_asset' %}">Create bulk assets</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Barcode Sheet for Printing -->
+{% if assets %}
+<div class="barcode-sheet">
+    {% for asset in assets %}
+    <div class="barcode-item">
+        <div class="barcode-label">Asset ID</div>
+        {% if asset.barcode_image %}
+        <div style="margin: 10px 0;">
+            <img src="{{ asset.barcode_image }}" alt="Barcode: {{ asset.barcode }}" style="width: 100%; height: auto; max-height: 80px;">
+        </div>
+        {% else %}
+        <div class="barcode-number">{{ asset.asset_id }}</div>
+        {% endif %}
+        <div class="asset-name">{{ asset.name }}</div>
+        <div class="asset-cost">₹{{ asset.purchase_cost }}</div>
+        <div style="font-size: 10px; color: #999; margin-top: 8px;">
+            {{ asset.barcode }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<script>
+    // Auto-focus print dialog when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Uncomment the line below to auto-print on load
+        // window.print();
+    });
+</script>
+{% endblock %}

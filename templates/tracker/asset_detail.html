@@ -1,0 +1,286 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}{{ asset.name }} - Asset Details{% endblock %}
+
+{% block content %}
+<div class="page-title d-flex justify-content-between align-items-center">
+    <div>
+        <h1>{{ asset.asset_id }}</h1>
+        <p class="text-muted">{{ asset.name }}</p>
+    </div>
+    {% if is_admin %}
+    <div>
+        <a href="{% url 'tracker:asset_list' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="row">
+    <!-- Asset Information -->
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Asset Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Asset ID</label>
+                        <p class="lead">{{ asset.asset_id }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Barcode</label>
+                        <p class="lead">{{ asset.barcode }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Name</label>
+                        <p>{{ asset.name }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Serial Number</label>
+                        <p>{{ asset.serial_number|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Category</label>
+                        <p>{{ asset.category.name|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Location</label>
+                        <p>{{ asset.location.name|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Department</label>
+                        <p>{{ asset.department.name|default:"-" }}</p>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="text-muted small">Description</label>
+                        <p>{{ asset.description|default:"-" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Information -->
+        {% if asset.purchase_cost or asset.purchase_date %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-currency-rupee"></i> Financial Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Purchase Date</label>
+                        <p>{{ asset.purchase_date|date:"d M, Y"|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Purchase Cost</label>
+                        <p class="h6">₹ {{ asset.purchase_cost|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Depreciation Rate</label>
+                        <p>{{ asset.depreciation_rate|default:"0" }}% per year</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Current Value (After Depreciation)</label>
+                        <p class="h6 text-success">₹ {{ asset.current_value|default:"-" }}</p>
+                    </div>
+                </div>
+                {% if asset.purchase_cost and asset.current_value %}
+                <div class="alert alert-info small mt-3 mb-0">
+                    <strong>Depreciation Calculation:</strong><br>
+                    Original Value: ₹{{ asset.purchase_cost }} → Current Value: ₹{{ asset.current_value }}<br>
+                    Total Depreciation: ₹{{ asset.purchase_cost|add:asset.current_value|add:"-"|floatformat:2 }} 
+                    ({{ depreciation_percentage|default:"-" }})
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Status and Assignment -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Status & Assignment</h5>
+                {% if is_admin %}
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updateModal">
+                    <i class="bi bi-pencil"></i> Edit
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Status</label>
+                        <p>
+                            <span class="badge badge-{{ asset.status }} p-2">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Assigned To</label>
+                        <p>{% if asset.assigned_to %}{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}{% else %}Unassigned{% endif %}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Created By</label>
+                        <p>{{ asset.created_by.get_full_name|default:asset.created_by.username }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Created Date</label>
+                        <p>{{ asset.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'tracker:asset_list' %}" class="btn btn-outline-secondary me-2 mb-2">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                {% if is_admin %}
+                <button class="btn btn-primary mb-2" data-bs-toggle="modal" data-bs-target="#printModal">
+                    <i class="bi bi-printer"></i> Print Barcode
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Activity Log</h5>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if logs %}
+                    {% for log in logs %}
+                    <div class="mb-3 pb-3 border-bottom">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <strong class="d-block">{{ log.get_action_display }}</strong>
+                                <small class="text-muted">
+                                    by {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                                </small>
+                            </div>
+                            <small class="text-muted">{{ log.timestamp|date:"M d, H:i" }}</small>
+                        </div>
+                        {% if log.notes %}
+                        <small class="text-muted d-block mt-2">{{ log.notes }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center py-4">No activity yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update Modal -->
+{% if is_admin %}
+<div class="modal fade" id="updateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Asset</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'tracker:update_asset' asset.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">-- No change --</option>
+                            <option value="available" {% if asset.status == 'available' %}selected{% endif %}>Available</option>
+                            <option value="in_use" {% if asset.status == 'in_use' %}selected{% endif %}>In Use</option>
+                            <option value="repair" {% if asset.status == 'repair' %}selected{% endif %}>Under Repair</option>
+                            <option value="retired" {% if asset.status == 'retired' %}selected{% endif %}>Retired</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Location</label>
+                        <select class="form-select" id="location" name="location">
+                            <option value="" {% if not asset.location %}selected{% endif %}>-- No change --</option>
+                            {% for loc in locations %}
+                            <option value="{{ loc.id }}" {% if asset.location and asset.location.id == loc.id %}selected{% endif %}>
+                                {{ loc.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="department" class="form-label">Department</label>
+                        <select class="form-select" id="department" name="department">
+                            <option value="" {% if not asset.department %}selected{% endif %}>-- No change --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if asset.department and asset.department.id == dept.id %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="assigned_to" class="form-label">Assign To</label>
+                        <select class="form-select" id="assigned_to" name="assigned_to">
+                            <option value="" {% if not asset.assigned_to %}selected{% endif %}>-- Unassign --</option>
+                            {% for user in assigned_users %}
+                            <option value="{{ user.id }}" {% if asset.assigned_to and asset.assigned_to.id == user.id %}selected{% endif %}>
+                                {{ user.get_full_name|default:user.username }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div class="modal fade" id="printModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Print Barcode</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Choose barcode format:</p>
+                <div class="list-group">
+                    <a href="{% url 'tracker:asset_detail' asset.pk %}" onclick="return printBarcode('single')" class="list-group-item list-group-item-action">
+                        <i class="bi bi-file-pdf"></i> Single Barcode (Large)
+                    </a>
+                </div>
+                <p class="text-muted small mt-3">A4 PDF with large barcode at top</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function printBarcode(type) {
+    if (type === 'single') {
+        window.location.href = '/api/assets/{{ asset.id }}/print_barcode/';
+    }
+    return false;
+}
+</script>
+{% endblock %}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HTML5-QRCode Library Test</title>
+</head>
+<body>
+    <h1>HTML5-QRCode Library Test</h1>
+    <p>Check browser console (F12) for output</p>
+    
+    <script>
+        console.log('=== HTML5-QRCode Library Test ===');
+        console.log('Before loading: Html5Qrcode =', typeof Html5Qrcode);
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.4/html5-qrcode.min.js"></script>
+    
+    <script>
+        console.log('After loading: Html5Qrcode =', typeof Html5Qrcode);
+        if (typeof Html5Qrcode !== 'undefined') {
+            console.log('✅ Library loaded successfully');
+            console.log('Html5Qrcode object:', Html5Qrcode);
+        } else {
+            console.error('❌ Library failed to load');
+        }
+    </script>
+</body>
+</html>

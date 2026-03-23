@@ -1,0 +1,557 @@
+{% extends 'tracker/base.html' %}
+{% load static %}
+
+{% block title %}Scan Barcode - Asset Tracking System{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Html5-QRCode scanner container */
+    #video {
+        width: 100%;
+        min-height: 300px;
+        background: #000;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    
+    /* Html5-QRCode creates video and canvas elements inside */
+    #video video,
+    #video canvas {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+    }
+    
+    .result-card {
+        animation: slideIn 0.3s ease;
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Debug panel styles */
+    #debug-panel {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        padding: 10px;
+        margin-top: 10px;
+        font-family: monospace;
+        font-size: 11px;
+        max-height: 200px;
+        overflow-y: auto;
+        color: #333;
+    }
+    
+    .debug-log {
+        padding: 3px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .debug-log.error {
+        color: #dc3545;
+        font-weight: bold;
+    }
+    
+    .debug-log.success {
+        color: #28a745;
+    }
+    
+    .debug-log.info {
+        color: #0069d9;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-title text-center">
+    <h1>Scan Asset Barcode</h1>
+    <p class="text-muted">Use your camera or barcode scanner to scan the asset barcode</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Scanner Input Method Toggle -->
+        <div class="btn-group w-100 mb-4" role="group">
+            <input type="radio" class="btn-check" name="input-method" id="camera" value="camera" checked>
+            <label class="btn btn-outline-primary" for="camera">
+                <i class="bi bi-camera"></i> Camera
+            </label>
+            
+            <input type="radio" class="btn-check" name="input-method" id="manual" value="manual">
+            <label class="btn btn-outline-primary" for="manual">
+                <i class="bi bi-pencil-square"></i> Manual Entry
+            </label>
+        </div>
+
+        <!-- Camera Scanner -->
+        <div id="camera-scanner" class="scanner-section">
+            <div class="alert alert-info mb-3">
+                <strong><i class="bi bi-info-circle"></i> Note:</strong> Camera access requires HTTPS (secure connection). 
+                If you see an error starting the camera, please use the <strong>Manual Entry</strong> tab instead.
+            </div>
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Position Barcode in Camera</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="video" style="width: 100%; background: #000;"></div>
+                </div>
+                <div class="card-footer text-center">
+                    <button type="button" id="startBtn" class="btn btn-primary" onclick="startCamera()">
+                        <i class="bi bi-play-circle"></i> Start Camera
+                    </button>
+                    <button type="button" id="stopBtn" class="btn btn-secondary" style="display: none;">
+                        <i class="bi bi-stop-circle"></i> Stop Camera
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manual Entry -->
+        <div id="manual-scanner" class="scanner-section" style="display: none;">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Enter Barcode Manually</h5>
+                </div>
+                <div class="card-body">
+                    <form id="manual-form" onsubmit="return handleManualScan(event)">
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control" id="barcode-input" 
+                                   placeholder="Enter or scan barcode here..." autofocus>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i> Search
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Result -->
+        <div id="result-container"></div>
+        
+        <!-- Debug Panel - visible on mobile for troubleshooting -->
+        <div id="debug-panel">
+            <strong>Debug Log:</strong>
+            <div id="debug-log-content"></div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- Html5-QRCode - Reliable QR & Barcode Scanner -->
+<script src="{% static 'js/html5-qrcode.min.js' %}"></script>
+
+<script>
+// Immediately check if library loaded
+console.log("Script tag executed. Checking for Html5Qrcode...");
+console.log("typeof Html5Qrcode:", typeof window.Html5Qrcode);
+
+// Add script load event for debugging
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("DOM Loaded. Html5Qrcode available?", typeof window.Html5Qrcode);
+});
+let scannerActive = false;
+let cameraStarted = false;
+let scanner = null;
+let scannerInitialized = false;
+let lastDetectionTime = 0;
+
+// Debug logging function - visible on page
+function debugLog(message, type = 'info') {
+    const timestamp = new Date().toLocaleTimeString();
+    const logContent = document.getElementById('debug-log-content');
+    
+    const logEntry = document.createElement('div');
+    logEntry.className = `debug-log ${type}`;
+    logEntry.textContent = `[${timestamp}] ${message}`;
+    
+    logContent.appendChild(logEntry);
+    
+    // Keep only last 20 logs
+    while (logContent.children.length > 20) {
+        logContent.removeChild(logContent.firstChild);
+    }
+    
+    // Auto-scroll to bottom
+    logContent.parentElement.scrollTop = logContent.parentElement.scrollHeight;
+    
+    // Also log to browser console
+    console.log(`[${type.toUpperCase()}] ${message}`);
+}
+
+debugLog('Html5-QRCode Scanner Loading...', 'info');
+
+let html5QrcodeScanner = null;
+
+// Initialize Html5-QRCode Scanner
+async function initializeDynamsoft() {
+    try {
+        if (scannerInitialized) {
+            debugLog('Scanner already initialized', 'info');
+            return html5QrcodeScanner;
+        }
+        
+        debugLog('Initializing Html5-QRCode scanner...', 'info');
+        
+        if (typeof Html5Qrcode === 'undefined') {
+            debugLog('❌ Html5Qrcode library not loaded', 'error');
+            return null;
+        }
+        
+        debugLog('Html5Qrcode library found', 'success');
+        debugLog('Creating scanner instance...', 'info');
+        
+        html5QrcodeScanner = new Html5Qrcode("video", {
+            formFactor: "portrait",
+            disableFlip: false
+        });
+        
+        debugLog('Scanner instance created', 'success');
+        scannerInitialized = true;
+        debugLog('✅ Html5-QRCode fully initialized and ready', 'success');
+        return html5QrcodeScanner;
+        
+    } catch (error) {
+        debugLog(`❌ Initialization error: ${error.message}`, 'error');
+        scannerInitialized = false;
+        return null;
+    }
+}
+
+// Wait for library and initialize with better logging
+let libraryCheckCount = 0;
+function waitForLibrary() {
+    libraryCheckCount++;
+    
+    // Check both window.Html5Qrcode and just Html5Qrcode
+    const libAvailable = (typeof Html5Qrcode !== 'undefined') || (typeof window.Html5Qrcode !== 'undefined');
+    
+    if (libAvailable) {
+        debugLog('✅ Html5Qrcode library detected!', 'success');
+        
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', async function() {
+                debugLog('Page loaded, initializing scanner...', 'info');
+                const result = await initializeDynamsoft();
+                
+                if (result) {
+                    debugLog('✅ Ready to scan! Click "Start Camera"', 'success');
+                } else {
+                    debugLog('❌ Failed to initialize. See logs above.', 'error');
+                }
+            });
+        } else {
+            debugLog('Document already loaded, initializing scanner...', 'info');
+            initializeDynamsoft();
+        }
+    } else {
+        if (libraryCheckCount === 1) {
+            debugLog('Html5Qrcode library loading... (checking every 500ms)', 'info');
+        }
+        if (libraryCheckCount > 40) {  // 20 seconds timeout
+            debugLog('❌ TIMEOUT: Html5Qrcode library failed to load after 20 seconds', 'error');
+            debugLog('Check browser console for errors', 'error');
+            return;
+        }
+        setTimeout(waitForLibrary, 500);
+    }
+}
+
+// Wait for DOM ready before checking library
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', waitForLibrary);
+} else {
+    waitForLibrary();
+}
+
+// Input method toggle
+document.querySelectorAll('input[name="input-method"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const cameraSection = document.getElementById('camera-scanner');
+        const manualSection = document.getElementById('manual-scanner');
+        
+        if (this.value === 'camera') {
+            cameraSection.style.display = 'block';
+            manualSection.style.display = 'none';
+            if (!scannerActive) {
+                startCamera();
+            }
+        } else {
+            cameraSection.style.display = 'none';
+            manualSection.style.display = 'block';
+            if (scannerActive) {
+                stopCamera();
+            }
+            document.getElementById('barcode-input').focus();
+        }
+    });
+});
+
+// Start camera with html5-qrcode barcode detection
+async function startCamera() {
+    if (scannerActive) {
+        debugLog('Scanner already active', 'info');
+        return;
+    }
+    
+    debugLog('=== Starting Camera ===', 'info');
+    const resultDiv = document.getElementById('result-container');
+    
+    // Check if HTTPS or localhost
+    const protocol = window.location.protocol;
+    const hostname = window.location.hostname;
+    debugLog(`Protocol: ${protocol}, Hostname: ${hostname}`, 'info');
+    
+    if (protocol !== 'https:' && hostname !== 'localhost' && hostname !== '127.0.0.1') {
+        debugLog('❌ HTTPS required', 'error');
+        resultDiv.innerHTML = '<div class="alert alert-warning mt-3">⚠️ HTTPS is required for camera access.</div>';
+        return;
+    }
+    
+    // Ensure scanner is initialized
+    if (!html5QrcodeScanner || !scannerInitialized) {
+        debugLog('Scanner not initialized, initializing now...', 'info');
+        const scannerInstance = await initializeDynamsoft();
+        if (!scannerInstance) {
+            debugLog('❌ Failed to initialize scanner', 'error');
+            resultDiv.innerHTML = '<div class="alert alert-danger mt-3">❌ Scanner initialization failed. Check debug log.</div>';
+            return;
+        }
+        html5QrcodeScanner = scannerInstance;
+    }
+    
+    try {
+        debugLog('Starting html5-qrcode scanner...', 'info');
+        resultDiv.innerHTML = '<div class="alert alert-info mt-3">⏳ Starting camera...</div>';
+        
+        // Start the scanner
+        await html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            {
+                fps: 10,
+                qrbox: { width: 250, height: 250 }
+            },
+            (decodedText) => {
+                // Success callback
+                if (!scannerActive) return;
+                
+                debugLog(`✅ BARCODE DETECTED: ${decodedText}`, 'success');
+                
+                // Debounce
+                if (Date.now() - lastDetectionTime > 500) {
+                    lastDetectionTime = Date.now();
+                    resultDiv.innerHTML = `<div class="alert alert-success mt-3">✅ Detected: ${decodedText}</div>`;
+                    stopCamera();
+                    fetchAsset(decodedText);
+                }
+            },
+            (error) => {
+                // Error callback - silently ignore (normal when no barcode detected)
+                // Only log critical errors
+            }
+        );
+        
+        scannerActive = true;
+        cameraStarted = true;
+        document.getElementById('startBtn').style.display = 'none';
+        document.getElementById('stopBtn').style.display = 'inline-block';
+        
+        debugLog('✅ SCANNER RUNNING - Point camera at barcode', 'success');
+        resultDiv.innerHTML = '<div class="alert alert-success mt-3">✅ Scanning active! Point at barcode...</div>';
+        
+    } catch (err) {
+        debugLog(`❌ Camera error: ${err.name} - ${err.message}`, 'error');
+        resultDiv.innerHTML = `<div class="alert alert-danger mt-3">❌ ${err.name}: ${err.message}</div>`;
+    }
+}
+
+// Stop camera
+async function stopCamera() {
+    if (scannerActive) {
+        try {
+            debugLog('Stopping scanner...', 'info');
+            
+            // Stop html5-qrcode scanner
+            if (html5QrcodeScanner) {
+                try {
+                    await html5QrcodeScanner.stop();
+                    debugLog('Html5-qrcode scanner stopped', 'info');
+                } catch (error) {
+                    debugLog(`Note stopping scanner: ${error.message}`, 'info');
+                }
+            }
+            
+            scannerActive = false;
+            cameraStarted = false;
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            debugLog('✅ Camera stopped', 'success');
+        } catch (error) {
+            debugLog(`Error stopping camera: ${error.message}`, 'error');
+        }
+    }
+}
+
+// Stop button click handler
+document.getElementById('stopBtn').addEventListener('click', stopCamera);
+
+// Manual scan
+function handleManualScan(event) {
+    event.preventDefault();
+    const barcode = document.getElementById('barcode-input').value.trim();
+    if (barcode) {
+        fetchAsset(barcode);
+        document.getElementById('barcode-input').value = '';
+    }
+    return false;
+}
+
+// Fetch asset by barcode
+function fetchAsset(barcode) {
+    const resultContainer = document.getElementById('result-container');
+    resultContainer.innerHTML = '<div class="card"><div class="card-body text-center"><div class="loading"></div> Scanning...</div></div>';
+    
+    fetch('{% url "tracker:scan_result" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ barcode: barcode })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayAsset(data.asset);
+        } else {
+            displayError(data.message);
+        }
+    })
+    .catch(error => {
+        displayError('Error: ' + error.message);
+    });
+}
+
+// Display asset
+function displayAsset(asset) {
+    const resultContainer = document.getElementById('result-container');
+    const html = `
+        <div class="card result-card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-check-circle"></i> Asset Found!</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Asset ID</label>
+                        <p class="lead">${asset.asset_id}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Barcode</label>
+                        <p class="lead">${asset.barcode}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="text-muted small">Name</label>
+                    <p><strong>${asset.name}</strong></p>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Category</label>
+                        <p>${asset.category}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Location</label>
+                        <p>${asset.location}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Status</label>
+                        <p><span class="badge badge-${asset.status}">${asset.status}</span></p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Assigned To</label>
+                        <p>${asset.assigned_to}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="/assets/${asset.id}/" class="btn btn-primary">
+                    <i class="bi bi-eye"></i> View Details
+                </a>
+                <button type="button" class="btn btn-secondary" onclick="clearResult()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Scan Again
+                </button>
+            </div>
+        </div>
+    `;
+    resultContainer.innerHTML = html;
+}
+
+// Display error
+function displayError(message) {
+    const resultContainer = document.getElementById('result-container');
+    const html = `
+        <div class="card result-card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-exclamation-circle"></i> Not Found</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">${message}</p>
+            </div>
+            <div class="card-footer">
+                <button type="button" class="btn btn-secondary" onclick="clearResult()">
+                    <i class="bi bi-arrow-counterclockwise"></i> Try Again
+                </button>
+            </div>
+        </div>
+    `;
+    resultContainer.innerHTML = html;
+}
+
+// Clear result
+function clearResult() {
+    document.getElementById('result-container').innerHTML = '';
+    const method = document.querySelector('input[name="input-method"]:checked').value;
+    if (method === 'manual') {
+        document.getElementById('barcode-input').focus();
+    }
+}
+
+// Auto-start camera on page load
+window.addEventListener('load', () => {
+    console.log('Page loaded, checking if camera should auto-start');
+    // Don't auto-start - let user click the button
+    // This avoids permission prompts before user is ready
+});
+
+// Stop camera on page unload
+window.addEventListener('beforeunload', () => {
+    if (scannerActive) {
+        stopCamera();
+    }
+});
+
+// Log that script has loaded
+console.log('Scan page script loaded successfully');
+</script>
+{% endblock %}

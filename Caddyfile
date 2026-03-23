@@ -1,0 +1,9 @@
+10.211.238.229:8443 {
+    tls cert.pem key.pem
+    reverse_proxy localhost:8000
+}
+
+localhost:8443 {
+    tls cert.pem key.pem
+    reverse_proxy localhost:8000
+}

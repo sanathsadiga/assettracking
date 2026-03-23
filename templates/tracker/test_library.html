@@ -1,0 +1,30 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Html5-QRCode Library Test</title>
+</head>
+<body>
+    <h1>Html5-QRCode Library Test</h1>
+    <p>Checking if library loads...</p>
+    <div id="result"></div>
+
+    <script src="{% static 'js/html5-qrcode.min.js' %}"></script>
+    <script>
+        const resultDiv = document.getElementById('result');
+        
+        // Check immediately
+        setTimeout(() => {
+            console.log("Check 1 - typeof Html5Qrcode:", typeof Html5Qrcode);
+            console.log("Check 1 - window.Html5Qrcode:", typeof window.Html5Qrcode);
+            
+            if (typeof Html5Qrcode !== 'undefined') {
+                resultDiv.innerHTML += '<p style="color: green;">✅ Library loaded successfully!</p>';
+                resultDiv.innerHTML += '<p>Html5Qrcode is available</p>';
+            } else {
+                resultDiv.innerHTML += '<p style="color: red;">❌ Library NOT loaded</p>';
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

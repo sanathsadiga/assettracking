@@ -1,0 +1,281 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Bulk Add Assets - Asset Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h1>Add Multiple Assets</h1>
+    <p class="text-muted">Create multiple assets of the same type at once (e.g., 50 tables)</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Bulk Asset Details</h5>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                {% if success_message %}
+                <div class="alert alert-success alert-dismissible fade show">
+                    <h5>✅ {{ success_message }}</h5>
+                    {% if created_assets %}
+                    <hr>
+                    <p class="mb-2"><strong>Created Assets:</strong></p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Asset ID</th>
+                                    <th>Barcode</th>
+                                    <th>Name</th>
+                                    <th>Cost</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for asset in created_assets %}
+                                <tr>
+                                    <td><strong>{{ asset.asset_id }}</strong></td>
+                                    <td><code>{{ asset.barcode }}</code></td>
+                                    <td>{{ asset.name }}</td>
+                                    <td>₹{{ asset.purchase_cost }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <form method="post" action="{% url 'tracker:barcode_print' %}" class="mt-3">
+                        {% csrf_token %}
+                        {% for asset in created_assets %}
+                        <input type="hidden" name="asset_ids" value="{{ asset.id }}">
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-printer"></i> Print Barcodes for All {{ created_assets|length }} Items
+                        </button>
+                        <a href="{% url 'tracker:asset_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-list"></i> View All Assets
+                        </a>
+                    </form>
+                    {% endif %}
+                    {% if errors %}
+                    <p class="text-danger mt-3"><strong>Errors:</strong></p>
+                    <ul class="text-danger">
+                        {% for error in errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    <button type="button" class="btn btn-secondary mt-3" onclick="location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Create More Assets
+                    </button>
+                </div>
+                {% endif %}
+
+                {% if not success_message %}
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            Asset Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="e.g., Wooden Table" required>
+                        <small class="text-muted">All items will be named as: Name #1, Name #2, etc.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="quantity" class="form-label">
+                            Quantity <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="quantity" name="quantity" 
+                                   value="1" min="1" max="500" required>
+                            <span class="input-group-text">items</span>
+                        </div>
+                        <small class="text-muted">How many items to create (max 500)</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="2" placeholder="Description for all items..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">-- Select Category --</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">
+                                Location <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="location" name="location" required>
+                                <option value="">-- Select Location --</option>
+                                {% for location in locations %}
+                                <option value="{{ location.id }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information Section -->
+                    <div class="card mt-4 border-info">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h6 class="mb-0"><i class="bi bi-currency-rupee"></i> Financial Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="purchase_date" class="form-label">
+                                        Purchase Date <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="purchase_date" 
+                                           name="purchase_date" required>
+                                    <small class="text-muted">Same date for all items</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="purchase_cost" class="form-label">
+                                        Unit Cost (₹) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control" id="purchase_cost" 
+                                           name="purchase_cost" step="0.01" placeholder="e.g., 5000" required>
+                                    <small class="text-muted">Cost per item (same for all)</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="depreciation_rate" class="form-label">Annual Depreciation Rate (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="depreciation_rate" 
+                                           name="depreciation_rate" step="0.01" value="0" 
+                                           placeholder="e.g., 10" min="0" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Same rate for all items (e.g., 10 for 10% per year)</small>
+                            </div>
+
+                            <div class="alert alert-light border">
+                                <small class="text-muted">
+                                    <strong>Example:</strong> If you create 50 tables costing ₹5,000 each on 23-03-2026 with 10% depreciation:
+                                    <ul class="mb-0 mt-2">
+                                        <li>Total Investment: 50 × ₹5,000 = ₹2,50,000</li>
+                                        <li>Each table gets Asset ID: TABLE0001, TABLE0002, ... TABLE0050</li>
+                                        <li>All get same barcode (matching Asset ID)</li>
+                                        <li>After 1 year: Each table value = ₹4,500 (10% depreciation)</li>
+                                        <li>You can print all 50 barcodes at once</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>How it works:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Each item gets a unique Asset ID (auto-incremented)</li>
+                            <li>Barcode = Asset ID (for easy scanning)</li>
+                            <li>After creation, you can print all barcodes together</li>
+                            <li>Perfect for bulk purchases like 50 tables, 100 chairs, etc.</li>
+                        </ul>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create {{ quantity|default:'Multiple' }} Assets
+                        </button>
+                        <a href="{% url 'tracker:asset_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Bulk Creation Guide</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">📋 Steps</h6>
+                <ol class="small">
+                    <li class="mb-2">Enter asset name (e.g., "Wooden Table")</li>
+                    <li class="mb-2">Set quantity (1-500)</li>
+                    <li class="mb-2">Choose category & location</li>
+                    <li class="mb-2">Enter financial info (required)</li>
+                    <li class="mb-2">Click "Create Assets"</li>
+                    <li class="mb-2">Print all barcodes at once</li>
+                </ol>
+
+                <hr>
+
+                <h6 class="mb-2">💡 Examples</h6>
+                <div class="alert alert-light border">
+                    <p class="small mb-2"><strong>50 Tables</strong></p>
+                    <ul class="small mb-0">
+                        <li>Name: Wooden Table</li>
+                        <li>Qty: 50</li>
+                        <li>Cost: ₹5,000 each</li>
+                        <li>Total: ₹2,50,000</li>
+                    </ul>
+                </div>
+
+                <div class="alert alert-light border">
+                    <p class="small mb-2"><strong>100 Chairs</strong></p>
+                    <ul class="small mb-0">
+                        <li>Name: Office Chair</li>
+                        <li>Qty: 100</li>
+                        <li>Cost: ₹2,000 each</li>
+                        <li>Total: ₹2,00,000</li>
+                    </ul>
+                </div>
+
+                <hr>
+
+                <h6 class="mb-2">🖨️ Barcode Printing</h6>
+                <p class="small">After creation, you'll see:</p>
+                <ul class="small">
+                    <li>✅ All created assets listed</li>
+                    <li>📊 Print button for all items</li>
+                    <li>🏷️ Each item gets unique barcode</li>
+                </ul>
+
+                <div class="alert alert-info mt-3">
+                    <small class="mb-0">
+                        <strong>💡 Tip:</strong> Use bulk creation for any identical items purchased together. 
+                        Each gets unique Asset ID but same cost & depreciation rate.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Update button text with quantity
+document.getElementById('quantity').addEventListener('change', function() {
+    const qty = this.value || 'Multiple';
+    const button = document.querySelector('button[type="submit"]');
+    button.innerHTML = `<i class="bi bi-check-circle"></i> Create ${qty} Assets`;
+});
+</script>
+{% endblock %}

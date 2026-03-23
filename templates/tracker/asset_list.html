@@ -1,0 +1,156 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Asset List - Asset Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-title d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Assets</h1>
+        <p class="text-muted">Manage and view all assets</p>
+    </div>
+    {% if is_admin %}
+    <a href="{% url 'tracker:add_asset' %}" class="btn btn-primary">
+        <i class="bi bi-plus-square"></i> Add Asset
+    </a>
+    {% endif %}
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" class="form-control" name="q" 
+                       placeholder="Search by name, ID, barcode..." 
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status">
+                    <option value="">All Status</option>
+                    <option value="available" {% if request.GET.status == 'available' %}selected{% endif %}>Available</option>
+                    <option value="in_use" {% if request.GET.status == 'in_use' %}selected{% endif %}>In Use</option>
+                    <option value="repair" {% if request.GET.status == 'repair' %}selected{% endif %}>Under Repair</option>
+                    <option value="retired" {% if request.GET.status == 'retired' %}selected{% endif %}>Retired</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="category">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if request.GET.category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="location">
+                    <option value="">All Locations</option>
+                    {% for location in locations %}
+                    <option value="{{ location.id }}" {% if request.GET.location|stringformat:"s" == location.id|stringformat:"s" %}selected{% endif %}>
+                        {{ location.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Assets Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Asset ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Current Value</th>
+                    <th>Assigned To</th>
+                    <th>Created</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if assets %}
+                    {% for asset in assets %}
+                    <tr>
+                        <td>
+                            <strong>{{ asset.asset_id }}</strong>
+                        </td>
+                        <td>{{ asset.name }}</td>
+                        <td>{{ asset.category.name|default:"-" }}</td>
+                        <td>{{ asset.location.name|default:"-" }}</td>
+                        <td>
+                            <span class="badge badge-{{ asset.status }}">
+                                {{ asset.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if asset.current_value %}
+                                <small class="text-success">₹{{ asset.current_value }}</small>
+                            {% elif asset.purchase_cost %}
+                                <small class="text-muted">₹{{ asset.purchase_cost }}</small>
+                            {% else %}
+                                <small class="text-muted">-</small>
+                            {% endif %}
+                        </td>
+                        <td>{% if asset.assigned_to %}{{ asset.assigned_to.get_full_name|default:asset.assigned_to.username }}{% else %}Unassigned{% endif %}</td>
+                        <td><small>{{ asset.created_at|date:"M d" }}</small></td>
+                        <td>
+                            <a href="{% url 'tracker:asset_detail' asset.pk %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            No assets found
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1{% if search_query %}&q={{ search_query }}{% endif %}">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">Previous</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&q={{ search_query }}{% endif %}">Last</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

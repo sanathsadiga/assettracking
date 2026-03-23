@@ -1,0 +1,177 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Manage Categories - Asset Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-title d-flex justify-content-between align-items-center">
+    <div>
+        <h1>Manage Categories</h1>
+        <p class="text-muted">Add, edit, or remove asset categories</p>
+    </div>
+    {% if user.is_staff %}
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+        <i class="bi bi-plus-square"></i> Add Category
+    </button>
+    {% endif %}
+</div>
+
+<!-- Categories Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Description</th>
+                    <th>Assets Count</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if categories %}
+                    {% for category in categories %}
+                    <tr>
+                        <td>
+                            <strong>{{ category.name }}</strong>
+                        </td>
+                        <td>{{ category.description|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-info">{{ category.assets.count }}</span>
+                        </td>
+                        <td><small>{{ category.created_at|date:"M d, Y" }}</small></td>
+                        <td>
+                            {% if user.is_staff %}
+                            <button class="btn btn-sm btn-warning" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#editCategoryModal"
+                                    data-category-id="{{ category.id }}"
+                                    data-category-name="{{ category.name }}"
+                                    data-category-desc="{{ category.description|default:'' }}"
+                                    onclick="editCategory(this)">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
+                            {% if category.assets.count == 0 %}
+                            <button class="btn btn-sm btn-danger" 
+                                    data-category-id="{{ category.id }}"
+                                    data-category-name="{{ category.name }}"
+                                    onclick="deleteCategory(this)">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                            {% else %}
+                            <button class="btn btn-sm btn-danger" disabled title="Category has assets">
+                                <i class="bi bi-trash"></i> Delete
+                            </button>
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            No categories found. <a href="#" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Add one now</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Category Modal -->
+<div class="modal fade" id="addCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'tracker:add_category' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="e.g., Laptop, Desktop, Printer..." required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" placeholder="Optional description..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'tracker:edit_category' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="edit_id" name="id">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editCategory(button) {
+    const id = button.getAttribute('data-category-id');
+    const name = button.getAttribute('data-category-name');
+    const description = button.getAttribute('data-category-desc');
+    
+    document.getElementById('edit_id').value = id;
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_description').value = description;
+}
+
+function deleteCategory(button) {
+    const id = button.getAttribute('data-category-id');
+    const name = button.getAttribute('data-category-name');
+    
+    if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/manage/categories/${id}/delete/`;
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                         document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

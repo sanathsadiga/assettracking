@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Print Barcodes - Asset Tracking System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: white;
+            font-family: Arial, sans-serif;
+        }
+
+        .barcode-sheet {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 15px;
+            page-break-after: always;
+        }
+
+        .barcode-item {
+            border: 2px solid #333;
+            padding: 20px;
+            text-align: center;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            background: white;
+        }
+
+        .barcode-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .barcode-image {
+            margin: 10px 0;
+            width: 100%;
+            height: auto;
+            max-height: 100px;
+        }
+
+        .asset-name {
+            font-size: 13px;
+            font-weight: 500;
+            margin: 8px 0;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+
+        .asset-cost {
+            font-size: 11px;
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .barcode-text {
+            font-size: 9px;
+            color: #999;
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
+        }
+
+        @media print {
+            * {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+            
+            html {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .barcode-sheet {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 10px !important;
+                padding: 15px !important;
+                page-break-after: auto !important;
+            }
+
+            .barcode-item {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            /* Hide everything except barcode sheet */
+            .no-print,
+            .print-header,
+            .print-footer,
+            nav,
+            footer,
+            .sidebar,
+            .navbar {
+                display: none !important;
+            }
+        }
+
+        /* Screen only styles */
+        .screen-only {
+            display: block;
+        }
+
+        @media print {
+            .screen-only {
+                display: none !important;
+            }
+        }
+
+        /* Financial Summary Styles */
+        .stat-box {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #0d6efd;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #6c757d;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .stat-value.text-success {
+            color: #198754 !important;
+        }
+
+        .stat-value.text-danger {
+            color: #dc3545 !important;
+        }
+
+        .card {
+            border: 1px solid rgba(13, 110, 253, 0.25);
+            border-radius: 8px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .card-header {
+            border-bottom: 1px solid rgba(13, 110, 253, 0.25);
+            padding: 0.75rem 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Screen Only - Print Instructions -->
+    <div class="screen-only">
+        <div class="container mt-4">
+            <div class="row">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h5>🖨️ Print Barcodes for {{ assets|length }} Items</h5>
+                        <p class="mb-2">Click the "Print" button below or press <kbd>Ctrl+P</kbd> / <kbd>Cmd+P</kbd></p>
+                        <button onclick="window.print()" class="btn btn-primary">
+                            <i class="bi bi-printer"></i> Print Now
+                        </button>
+                        <button onclick="window.history.back()" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back
+                        </button>
+                    </div>
+
+                    <!-- Financial Summary -->
+                    {% if assets %}
+                    <div class="card mb-4 border-info">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h6 class="mb-0"><i class="bi bi-currency-rupee"></i> Financial Summary</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="stat-box">
+                                        <div class="stat-label">Total Items</div>
+                                        <div class="stat-value">{{ assets|length }}</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box">
+                                        <div class="stat-label">Total Purchased Amount</div>
+                                        <div class="stat-value">
+                                            ₹{{ total_purchase_cost|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box">
+                                        <div class="stat-label">Total Current Value</div>
+                                        <div class="stat-value text-success">
+                                            ₹{{ total_current_value|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="stat-box">
+                                        <div class="stat-label">Total Depreciation</div>
+                                        <div class="stat-value text-danger">
+                                            ₹{{ total_depreciation|floatformat:2 }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Barcode Sheet -->
+    {% if assets %}
+    <div class="barcode-sheet">
+        {% for asset in assets %}
+        <div class="barcode-item">
+            <div class="barcode-label">Asset ID</div>
+            
+            {% if asset.barcode_image %}
+            <img src="{{ asset.barcode_image }}" alt="Barcode: {{ asset.barcode }}" class="barcode-image">
+            {% endif %}
+            
+            <div class="asset-name">{{ asset.name }}</div>
+            <div class="asset-cost">₹{{ asset.purchase_cost }}</div>
+            <div class="barcode-text">{{ asset.barcode }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="container mt-5">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> No assets to print.
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        // Auto-show print dialog
+        window.addEventListener('load', function() {
+            // Uncomment below to auto-print immediately
+            // window.print();
+        });
+    </script>
+</body>
+</html>

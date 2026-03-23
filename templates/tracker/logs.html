@@ -1,0 +1,135 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Logs - Asset Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h1>Activity Logs</h1>
+    <p class="text-muted">View audit trail of all asset actions</p>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <select class="form-select" name="asset_id">
+                    <option value="">All Assets</option>
+                    {% for asset in assets %}
+                    <option value="{{ asset.asset_id }}" {% if request.GET.asset_id == asset.asset_id %}selected{% endif %}>
+                        {{ asset.asset_id }} - {{ asset.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select" name="action">
+                    <option value="">All Actions</option>
+                    <option value="created" {% if request.GET.action == 'created' %}selected{% endif %}>Created</option>
+                    <option value="assigned" {% if request.GET.action == 'assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="unassigned" {% if request.GET.action == 'unassigned' %}selected{% endif %}>Unassigned</option>
+                    <option value="status_changed" {% if request.GET.action == 'status_changed' %}selected{% endif %}>Status Changed</option>
+                    <option value="scanned" {% if request.GET.action == 'scanned' %}selected{% endif %}>Scanned</option>
+                    <option value="updated" {% if request.GET.action == 'updated' %}selected{% endif %}>Updated</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Asset</th>
+                    <th>Action</th>
+                    <th>Performed By</th>
+                    <th>Details</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if logs %}
+                    {% for log in logs %}
+                    <tr>
+                        <td>
+                            <strong>{{ log.asset.asset_id }}</strong><br>
+                            <small class="text-muted">{{ log.asset.name }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">{{ log.get_action_display }}</span>
+                        </td>
+                        <td>
+                            {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {% if log.old_value %}
+                                    <strong>Old:</strong> {{ log.old_value }}<br>
+                                {% endif %}
+                                {% if log.new_value %}
+                                    <strong>New:</strong> {{ log.new_value }}<br>
+                                {% endif %}
+                                {% if log.notes %}
+                                    {{ log.notes }}
+                                {% endif %}
+                            </small>
+                        </td>
+                        <td>
+                            <small class="text-muted">
+                                {{ log.timestamp|date:"M d, Y H:i:s" }}<br>
+                                <span title="{{ log.timestamp }}">
+                                    {{ log.timestamp|timesince }} ago
+                                </span>
+                            </small>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            No logs found
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">First</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
