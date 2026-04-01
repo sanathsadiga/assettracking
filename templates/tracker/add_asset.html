@@ -2,14 +2,49 @@
 
 {% block title %}Add Asset - Asset Tracking System{% endblock %}
 
+{% block extra_css %}
+<style>
+    .laptop-desktop-section {
+        display: none;
+        border-left: 4px solid #0d6efd;
+        padding-left: 15px;
+    }
+    
+    .laptop-desktop-section.show {
+        display: block;
+    }
+    
+    .form-section {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #e9ecef;
+    }
+    
+    .form-section:first-child {
+        border-top: none;
+        margin-top: 0;
+        padding-top: 0;
+    }
+    
+    .form-section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #0d6efd;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="page-title">
     <h1>Add New Asset</h1>
-    <p class="text-muted">Create a new asset in the system</p>
+    <p class="text-muted">Create a new asset in the system with all required information</p>
 </div>
 
 <div class="row">
-    <div class="col-lg-8">
+    <div class="col-lg-10">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Asset Details</h5>
@@ -17,122 +52,631 @@
             <div class="card-body">
                 {% if error %}
                 <div class="alert alert-danger alert-dismissible fade show">
-                    {{ error }}
+                    <i class="bi bi-exclamation-triangle"></i> {{ error }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
                 {% endif %}
 
-                <form method="post">
+                <form method="post" id="assetForm">
                     {% csrf_token %}
                     
-                    <div class="mb-3">
-                        <label for="name" class="form-label">
-                            Asset Name <span class="text-danger">*</span>
-                        </label>
-                        <input type="text" class="form-control" id="name" name="name" 
-                               placeholder="e.g., Dell Laptop" required>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <textarea class="form-control" id="description" name="description" 
-                                  rows="3" placeholder="Asset description..."></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="serial_number" class="form-label">Serial Number</label>
-                            <input type="text" class="form-control" id="serial_number" 
-                                   name="serial_number" placeholder="e.g., SN123456">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="category" class="form-label">
-                                Category <span class="text-danger">*</span>
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h6 class="form-section-title"><i class="bi bi-info-circle"></i> Basic Information</h6>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Asset Name <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select" id="category" name="category" required>
-                                <option value="">-- Select Category --</option>
-                                {% for category in categories %}
-                                <option value="{{ category.id }}">{{ category.name }}</option>
-                                {% endfor %}
-                            </select>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   placeholder="e.g., Dell Laptop" required>
                         </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="location" class="form-label">
-                                Location <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select" id="location" name="location" required>
-                                <option value="">-- Select Location --</option>
-                                {% for location in locations %}
-                                <option value="{{ location.id }}">{{ location.name }}</option>
-                                {% endfor %}
-                            </select>
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="2" placeholder="Asset description..."></textarea>
                         </div>
-                    </div>
 
-                    <!-- Financial Information Section -->
-                    <div class="card mt-4 border-info">
-                        <div class="card-header bg-info bg-opacity-10">
-                            <h6 class="mb-0"><i class="bi bi-currency-rupee"></i> Financial Information</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="purchase_date" class="form-label">
-                                        Purchase Date <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="date" class="form-control" id="purchase_date" 
-                                           name="purchase_date" placeholder="YYYY-MM-DD" required>
-                                    <small class="text-muted">Date when the asset was purchased</small>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="purchase_cost" class="form-label">
-                                        Purchase Cost (₹) <span class="text-danger">*</span>
-                                    </label>
-                                    <input type="number" class="form-control" id="purchase_cost" 
-                                           name="purchase_cost" step="0.01" placeholder="e.g., 50000" required>
-                                    <small class="text-muted">Original purchase price</small>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="serial_number" class="form-label">Serial Number</label>
+                                <input type="text" class="form-control" id="serial_number" 
+                                       name="serial_number" placeholder="e.g., SN123456">
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">
+                                    Category <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="category" name="category" required onchange="onCategoryChange()">
+                                    <option value="">-- Select Category --</option>
+                                    {% for category in categories %}
+                                    <option value="{{ category.id }}" data-name="{{ category.name }}">{{ category.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- Asset ID Settings -->
+                    <div class="form-section">
+                        <h6 class="form-section-title"><i class="bi bi-barcode"></i> Asset ID Configuration</h6>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="auto_generate_asset_id" 
+                                       name="auto_generate_asset_id" checked onchange="toggleAssetIdInput()">
+                                <label class="form-check-label" for="auto_generate_asset_id">
+                                    Auto-generate Asset ID (System will create unique ID automatically)
+                                </label>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                If unchecked, you can manually enter the Asset ID which will be used as the barcode
+                            </small>
+                        </div>
+
+                        <div id="manualAssetIdSection" style="display: none;">
                             <div class="mb-3">
+                                <label for="asset_id" class="form-label">
+                                    Asset ID / Barcode <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" class="form-control" id="asset_id" name="asset_id" 
+                                       placeholder="e.g., ASSET001 or your custom ID">
+                                <small class="text-muted">This will also be used as the barcode</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Organization Information -->
+                    <div class="form-section">
+                        <h6 class="form-section-title"><i class="bi bi-building"></i> Organization Details</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="location" class="form-label">
+                                    Location <span class="text-danger">*</span>
+                                </label>
+                                <select class="form-select" id="location" name="location" required>
+                                    <option value="">-- Select Location --</option>
+                                    {% for location in locations %}
+                                    <option value="{{ location.id }}">{{ location.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="department" class="form-label">Department / Function</label>
+                                <select class="form-select" id="department" name="department">
+                                    <option value="">-- Select Department --</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information -->
+                    <div class="form-section">
+                        <h6 class="form-section-title"><i class="bi bi-cash-coin"></i> Financial Information</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="purchase_date" class="form-label">
+                                    Purchase Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" class="form-control" id="purchase_date" 
+                                       name="purchase_date" placeholder="YYYY-MM-DD" required>
+                                <small class="text-muted">Date when the asset was purchased</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="purchase_cost" class="form-label">
+                                    Purchase Cost (₹) <span class="text-danger">*</span>
+                                </label>
+                                <input type="number" class="form-control" id="purchase_cost" 
+                                       name="purchase_cost" step="0.01" placeholder="e.g., 50000" required>
+                                <small class="text-muted">Original purchase price</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="depreciation_rate" class="form-label">Annual Depreciation Rate (%)</label>
                                 <div class="input-group">
                                     <input type="number" class="form-control" id="depreciation_rate" 
-                                           name="depreciation_rate" step="0.01" value="0" 
-                                           placeholder="e.g., 5" min="0" max="100">
+                                           name="depreciation_rate" step="0.01" placeholder="e.g., 10" value="0">
                                     <span class="input-group-text">%</span>
                                 </div>
-                                <small class="text-muted">Annual depreciation (e.g., 5 for 5% per year)</small>
+                                <small class="text-muted">Annual depreciation percentage (e.g., 10 for 10%)</small>
                             </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="po_number" class="form-label">PO Number</label>
+                                <input type="text" class="form-control" id="po_number" 
+                                       name="po_number" placeholder="Purchase Order Number">
+                            </div>
+                        </div>
 
-                            <div class="alert alert-light border">
-                                <small class="text-muted">
-                                    <strong>Example:</strong> If you buy an asset for ₹100 on 23-03-2026 with 5% depreciation:
-                                    <ul class="mb-0 mt-2">
-                                        <li>On 23-03-2026: Value = ₹100 (at creation)</li>
-                                        <li>On 23-03-2027: Value = ₹95 (5% depreciated)</li>
-                                        <li>On 23-03-2028: Value = ₹90.25 (5% more depreciation)</li>
-                                    </ul>
-                                </small>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="invoice_number" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="invoice_number" 
+                                       name="invoice_number" placeholder="Invoice Number">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="finance_asset_code" class="form-label">Finance Asset Code</label>
+                                <input type="text" class="form-control" id="finance_asset_code" 
+                                       name="finance_asset_code" placeholder="Finance Asset Code">
                             </div>
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-4">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Note:</strong> Asset ID and Barcode will be automatically generated after asset creation.
+                    <!-- Laptop/Desktop Specific Fields -->
+                    <div id="laptopDesktopSection" class="form-section laptop-desktop-section">
+                        <h6 class="form-section-title"><i class="bi bi-laptop"></i> Hardware Specifications</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cpu_make" class="form-label">CPU Make</label>
+                                <input type="text" class="form-control" id="cpu_make" 
+                                       name="cpu_make" placeholder="e.g., Intel, AMD">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="model" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="model" 
+                                       name="model" placeholder="Device Model">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="processor" class="form-label">Processor</label>
+                                <div style="position: relative; width: 100%;">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="processor" name="processor" 
+                                               placeholder="e.g., Intel Core i7-12700K, AMD Ryzen 9 5950X"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="processorDropdownBtn" 
+                                                title="Show processor list">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div id="processorDropdown" class="dropdown-menu show" style="display: none; max-height: 250px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                                        {% for proc_value in unique_processor_list %}
+                                        <a class="dropdown-item processor-option" href="#" data-value="{{ proc_value }}">{{ proc_value }}</a>
+                                        {% endfor %}
+                                        {% if not unique_processor_list %}
+                                        <span class="dropdown-item text-muted small">No previous processor entries. You can enter a custom value.</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <script>
+                                (function() {
+                                    const processorInput = document.getElementById('processor');
+                                    const processorDropdownBtn = document.getElementById('processorDropdownBtn');
+                                    const processorDropdown = document.getElementById('processorDropdown');
+                                    const processorOptions = document.querySelectorAll('.processor-option');
+                                    
+                                    // Filter options based on input
+                                    function filterProcessorOptions() {
+                                        const searchText = processorInput.value.toLowerCase();
+                                        processorOptions.forEach(function(option) {
+                                            const optionText = option.getAttribute('data-value').toLowerCase();
+                                            if (searchText === '' || optionText.includes(searchText)) {
+                                                option.style.display = '';
+                                            } else {
+                                                option.style.display = 'none';
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Show dropdown on input focus
+                                    processorInput.addEventListener('focus', function() {
+                                        processorDropdown.style.display = 'block';
+                                        filterProcessorOptions();
+                                    });
+                                    
+                                    // Filter and show dropdown as user types
+                                    processorInput.addEventListener('input', function() {
+                                        processorDropdown.style.display = 'block';
+                                        filterProcessorOptions();
+                                    });
+                                    
+                                    // Toggle dropdown on button click
+                                    processorDropdownBtn.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        processorInput.focus();
+                                        processorDropdown.style.display = processorDropdown.style.display === 'none' ? 'block' : 'none';
+                                        filterProcessorOptions();
+                                    });
+                                    
+                                    // Select option
+                                    processorOptions.forEach(function(option) {
+                                        option.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            processorInput.value = this.getAttribute('data-value');
+                                            processorDropdown.style.display = 'none';
+                                            processorInput.focus();
+                                        });
+                                    });
+                                    
+                                    // Close dropdown when clicking outside
+                                    document.addEventListener('click', function(e) {
+                                        const isClickInside = processorDropdown.contains(e.target) || 
+                                                              processorInput.contains(e.target) || 
+                                                              processorDropdownBtn.contains(e.target);
+                                        if (!isClickInside) {
+                                            processorDropdown.style.display = 'none';
+                                        }
+                                    });
+                                })();
+                                </script>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="ram" class="form-label">RAM</label>
+                                <input type="text" class="form-control" id="ram" 
+                                       name="ram" placeholder="e.g., 16GB">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="hdd" class="form-label">Storage/HDD</label>
+                                <input type="text" class="form-control" id="hdd" 
+                                       name="hdd" placeholder="e.g., 512GB SSD">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="os" class="form-label">Operating System</label>
+                                <div style="position: relative; width: 100%;">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="os" name="os" 
+                                               placeholder="e.g., Windows 10 Professional (x64) Version 22H2 (build 19045.2846)"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="osDropdownBtn" 
+                                                title="Show OS list">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div id="osDropdown" class="dropdown-menu show" style="display: none; max-height: 250px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                                        {% for os_value in unique_os_list %}
+                                        <a class="dropdown-item os-option" href="#" data-value="{{ os_value }}">{{ os_value }}</a>
+                                        {% endfor %}
+                                        {% if not unique_os_list %}
+                                        <span class="dropdown-item text-muted small">No previous OS entries. You can enter a custom value.</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <script>
+                                (function() {
+                                    const osInput = document.getElementById('os');
+                                    const osDropdownBtn = document.getElementById('osDropdownBtn');
+                                    const osDropdown = document.getElementById('osDropdown');
+                                    const osOptions = document.querySelectorAll('.os-option');
+                                    
+                                    // Filter options based on input
+                                    function filterOSOptions() {
+                                        const searchText = osInput.value.toLowerCase();
+                                        osOptions.forEach(function(option) {
+                                            const optionText = option.getAttribute('data-value').toLowerCase();
+                                            if (searchText === '' || optionText.includes(searchText)) {
+                                                option.style.display = '';
+                                            } else {
+                                                option.style.display = 'none';
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Show dropdown on input focus
+                                    osInput.addEventListener('focus', function() {
+                                        osDropdown.style.display = 'block';
+                                        filterOSOptions();
+                                    });
+                                    
+                                    // Filter and show dropdown as user types
+                                    osInput.addEventListener('input', function() {
+                                        osDropdown.style.display = 'block';
+                                        filterOSOptions();
+                                    });
+                                    
+                                    // Toggle dropdown on button click
+                                    osDropdownBtn.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        osInput.focus();
+                                        osDropdown.style.display = osDropdown.style.display === 'none' ? 'block' : 'none';
+                                        filterOSOptions();
+                                    });
+                                    
+                                    // Select option
+                                    osOptions.forEach(function(option) {
+                                        option.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            osInput.value = this.getAttribute('data-value');
+                                            osDropdown.style.display = 'none';
+                                            osInput.focus();
+                                        });
+                                    });
+                                    
+                                    // Close dropdown when clicking outside
+                                    document.addEventListener('click', function(e) {
+                                        const isClickInside = osDropdown.contains(e.target) || 
+                                                              osInput.contains(e.target) || 
+                                                              osDropdownBtn.contains(e.target);
+                                        if (!isClickInside) {
+                                            osDropdown.style.display = 'none';
+                                        }
+                                    });
+                                })();
+                                </script>
+                            </div>
+                        </div>
+
+                        <!-- Software & Tools -->
+                        <h6 class="form-section-title mt-4"><i class="bi bi-gear"></i> Software & Tools</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="ms_office_version" class="form-label">MS Office Version</label>
+                                <div style="position: relative; width: 100%;">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="ms_office_version" name="ms_office_version" 
+                                               placeholder="e.g., MICROSOFT-OFFICE VERSION-7, MICROSOFT-OFFICE VERSION-O365"
+                                               autocomplete="off">
+                                        <button class="btn btn-outline-secondary" type="button" id="msOfficeDropdownBtn" 
+                                                title="Show MS Office versions">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                    <div id="msOfficeDropdown" class="dropdown-menu show" style="display: none; max-height: 250px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                                        {% for office_version in unique_ms_office_list %}
+                                        <a class="dropdown-item ms-office-option" href="#" data-value="{{ office_version }}">{{ office_version }}</a>
+                                        {% endfor %}
+                                        {% if not unique_ms_office_list %}
+                                        <span class="dropdown-item text-muted small">No previous MS Office entries. You can enter a custom value.</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <script>
+                                (function() {
+                                    const msOfficeInput = document.getElementById('ms_office_version');
+                                    const msOfficeDropdownBtn = document.getElementById('msOfficeDropdownBtn');
+                                    const msOfficeDropdown = document.getElementById('msOfficeDropdown');
+                                    const msOfficeOptions = document.querySelectorAll('.ms-office-option');
+                                    
+                                    // Filter options based on input
+                                    function filterMSOfficeOptions() {
+                                        const searchText = msOfficeInput.value.toLowerCase();
+                                        msOfficeOptions.forEach(function(option) {
+                                            const optionText = option.getAttribute('data-value').toLowerCase();
+                                            if (searchText === '' || optionText.includes(searchText)) {
+                                                option.style.display = '';
+                                            } else {
+                                                option.style.display = 'none';
+                                            }
+                                        });
+                                    }
+                                    
+                                    // Show dropdown on input focus
+                                    msOfficeInput.addEventListener('focus', function() {
+                                        msOfficeDropdown.style.display = 'block';
+                                        filterMSOfficeOptions();
+                                    });
+                                    
+                                    // Filter and show dropdown as user types
+                                    msOfficeInput.addEventListener('input', function() {
+                                        msOfficeDropdown.style.display = 'block';
+                                        filterMSOfficeOptions();
+                                    });
+                                    
+                                    // Toggle dropdown on button click
+                                    msOfficeDropdownBtn.addEventListener('click', function(e) {
+                                        e.preventDefault();
+                                        msOfficeInput.focus();
+                                        msOfficeDropdown.style.display = msOfficeDropdown.style.display === 'none' ? 'block' : 'none';
+                                        filterMSOfficeOptions();
+                                    });
+                                    
+                                    // Select option
+                                    msOfficeOptions.forEach(function(option) {
+                                        option.addEventListener('click', function(e) {
+                                            e.preventDefault();
+                                            msOfficeInput.value = this.getAttribute('data-value');
+                                            msOfficeDropdown.style.display = 'none';
+                                            msOfficeInput.focus();
+                                        });
+                                    });
+                                    
+                                    // Close dropdown when clicking outside
+                                    document.addEventListener('click', function(e) {
+                                        const isClickInside = msOfficeDropdown.contains(e.target) || 
+                                                              msOfficeInput.contains(e.target) || 
+                                                              msOfficeDropdownBtn.contains(e.target);
+                                        if (!isClickInside) {
+                                            msOfficeDropdown.style.display = 'none';
+                                        }
+                                    });
+                                })();
+                                </script>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="antivirus" class="form-label">Antivirus</label>
+                                <select class="form-select" id="antivirus" name="antivirus">
+                                    <option value="no">No</option>
+                                    <option value="yes">Yes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="card bg-light">
+                                    <div class="card-body p-3">
+                                        <h6 class="mb-3">Installed Software</h6>
+                                        <div class="row">
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="e1_user" name="e1_user">
+                                                    <label class="form-check-label" for="e1_user">E1 User</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="e3_user" name="e3_user">
+                                                    <label class="form-check-label" for="e3_user">E3 User</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="srilipi" name="srilipi">
+                                                    <label class="form-check-label" for="srilipi">SRILIPI</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="photoshop" name="photoshop">
+                                                    <label class="form-check-label" for="photoshop">Photoshop</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="indesign" name="indesign">
+                                                    <label class="form-check-label" for="indesign">InDesign</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="illustrator" name="illustrator">
+                                                    <label class="form-check-label" for="illustrator">Illustrator</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="corel_draw" name="corel_draw">
+                                                    <label class="form-check-label" for="corel_draw">CorelDRAW</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="distiller" name="distiller">
+                                                    <label class="form-check-label" for="distiller">Distiller</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="newswrap" name="newswrap">
+                                                    <label class="form-check-label" for="newswrap">Newswrap</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Network & Identification -->
+                        <h6 class="form-section-title mt-4"><i class="bi bi-wifi"></i> Network & Identification</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="ip_address" class="form-label">IP Address</label>
+                                <input type="text" class="form-control" id="ip_address" 
+                                       name="ip_address" placeholder="e.g., 192.168.1.100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="hostname" class="form-label">Hostname</label>
+                                <input type="text" class="form-control" id="hostname" 
+                                       name="hostname" placeholder="Current hostname">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="new_hostname" class="form-label">New Hostname</label>
+                                <input type="text" class="form-control" id="new_hostname" 
+                                       name="new_hostname" placeholder="New hostname to assign">
+                            </div>
+                        </div>
+
+                        <!-- User Information -->
+                        <h6 class="form-section-title mt-4"><i class="bi bi-person"></i> User Information</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" 
+                                       name="username" placeholder="Username">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="official_email" class="form-label">Official Email ID</label>
+                                <input type="email" class="form-control" id="official_email" 
+                                       name="official_email" placeholder="user@company.com">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="idm_role" class="form-label">IDM Role</label>
+                                <input type="text" class="form-control" id="idm_role" 
+                                       name="idm_role" placeholder="e.g., Admin, User">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="timescale_id" class="form-label">TimeScale ID</label>
+                                <input type="text" class="form-control" id="timescale_id" 
+                                       name="timescale_id" placeholder="TimeScale ID">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="sap_id" class="form-label">SAP ID</label>
+                                <input type="text" class="form-control" id="sap_id" 
+                                       name="sap_id" placeholder="SAP ID">
+                            </div>
+                        </div>
+
+                        <!-- Warranty & Installation -->
+                        <h6 class="form-section-title mt-4"><i class="bi bi-calendar-event"></i> Warranty & Installation</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="installation_date" class="form-label">Installation Date</label>
+                                <input type="date" class="form-control" id="installation_date" 
+                                       name="installation_date">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="warranty_expiry_date" class="form-label">Warranty Expiry Date</label>
+                                <input type="date" class="form-control" id="warranty_expiry_date" 
+                                       name="warranty_expiry_date">
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-circle"></i> Create Asset
-                        </button>
-                        <a href="{% url 'tracker:asset_list' %}" class="btn btn-secondary">
-                            <i class="bi bi-x-circle"></i> Cancel
-                        </a>
+                    <!-- Status & Remarks -->
+                    <div class="form-section">
+                        <h6 class="form-section-title"><i class="bi bi-flag"></i> Status & Remarks</h6>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="available">Available</option>
+                                <option value="in_use">In Use</option>
+                                <option value="repair">Under Repair</option>
+                                <option value="retired">Retired</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="remarks" class="form-label">Remarks / Comments</label>
+                            <textarea class="form-control" id="remarks" name="remarks" 
+                                      rows="3" placeholder="Add any additional remarks or comments..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <div class="form-section">
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Create Asset
+                            </button>
+                            <a href="{% url 'tracker:asset_list' %}" class="btn btn-secondary btn-lg">
+                                <i class="bi bi-x-circle"></i> Cancel
+                            </a>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -140,35 +684,80 @@
     </div>
 
     <!-- Info Panel -->
-    <div class="col-lg-4">
-        <div class="card">
+    <div class="col-lg-2">
+        <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0">Asset Creation Info</h5>
+                <h6 class="mb-0">Info</h6>
             </div>
             <div class="card-body">
-                <h6 class="mb-3">Workflow</h6>
-                <ol class="small">
-                    <li class="mb-2">Fill in asset details</li>
-                    <li class="mb-2">Click "Create Asset"</li>
-                    <li class="mb-2">System generates unique Asset ID (e.g., ASSET0001)</li>
-                    <li class="mb-2">Barcode = Asset ID automatically</li>
-                    <li class="mb-2">Print and stick barcode on asset</li>
-                </ol>
+                <h6 class="small mb-3">Asset ID</h6>
+                <p class="small text-muted">
+                    Check "Auto-generate" to let the system create a unique ID, or uncheck to enter your own ID which will be used as the barcode.
+                </p>
             </div>
         </div>
 
-        <div class="card mt-3">
+        <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0">Required Fields</h5>
+                <h6 class="mb-0">Category Fields</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    When you select "Laptop" or "Desktop" category, additional hardware and software fields will appear automatically.
+                </p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Required Fields</h6>
             </div>
             <div class="card-body">
                 <ul class="small list-unstyled">
                     <li><i class="bi bi-check-circle text-success"></i> Asset Name</li>
                     <li><i class="bi bi-check-circle text-success"></i> Category</li>
                     <li><i class="bi bi-check-circle text-success"></i> Location</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Purchase Date</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Purchase Cost</li>
                 </ul>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function toggleAssetIdInput() {
+    const checkbox = document.getElementById('auto_generate_asset_id');
+    const manualSection = document.getElementById('manualAssetIdSection');
+    const assetIdInput = document.getElementById('asset_id');
+    
+    if (checkbox.checked) {
+        manualSection.style.display = 'none';
+        assetIdInput.removeAttribute('required');
+    } else {
+        manualSection.style.display = 'block';
+        assetIdInput.setAttribute('required', 'required');
+    }
+}
+
+function onCategoryChange() {
+    const categorySelect = document.getElementById('category');
+    const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+    const categoryName = selectedOption.getAttribute('data-name') || '';
+    const laptopSection = document.getElementById('laptopDesktopSection');
+    
+    // Show laptop/desktop section if category is Laptop or Desktop
+    if (categoryName.toLowerCase() === 'laptop' || categoryName.toLowerCase() === 'desktop' || categoryName.toLowerCase() === 'pc') {
+        laptopSection.classList.add('show');
+    } else {
+        laptopSection.classList.remove('show');
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAssetIdInput();
+    onCategoryChange();
+});
+</script>
 {% endblock %}

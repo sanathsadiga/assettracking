@@ -34,7 +34,7 @@
                 </select>
             </div>
             <div class="col-md-2">
-                <select class="form-select" name="category">
+                <select class="form-select" name="category" id="categoryFilter">
                     <option value="">All Categories</option>
                     {% for category in categories %}
                     <option value="{{ category.id }}" {% if request.GET.category|stringformat:"s" == category.id|stringformat:"s" %}selected{% endif %}>
@@ -59,8 +59,443 @@
                 </button>
             </div>
         </form>
+
+        <!-- Advanced Filters for Laptop/Desktop -->
+        <div id="advancedFiltersContainer" style="display: none;" class="mt-4 pt-3 border-top">
+            <h6 class="mb-3">Advanced Filters - Laptop/Desktop Specifications</h6>
+            <form method="get" class="row g-2">
+                <!-- Hidden fields to preserve existing filters -->
+                <input type="hidden" name="q" value="{{ search_query }}">
+                <input type="hidden" name="status" value="{{ request.GET.status }}">
+                <input type="hidden" name="category" value="{{ request.GET.category }}">
+                <input type="hidden" name="location" value="{{ request.GET.location }}">
+
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="cpu_make" 
+                           placeholder="CPU Make" value="{{ request.GET.cpu_make }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="model" 
+                           placeholder="Model" value="{{ request.GET.model }}">
+                </div>
+                <div class="col-md-2">
+                    <div style="position: relative; width: 100%;">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm" id="processorFilter" name="processor" 
+                                   placeholder="Processor" value="{{ request.GET.processor }}" autocomplete="off">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" id="processorFilterDropdownBtn" 
+                                    title="Show processor list">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div id="processorFilterDropdown" class="dropdown-menu show" style="display: none; max-height: 200px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                            {% for proc_value in unique_processor_list %}
+                            <a class="dropdown-item processor-filter-option" href="#" data-value="{{ proc_value }}">{{ proc_value }}</a>
+                            {% endfor %}
+                            {% if not unique_processor_list %}
+                            <span class="dropdown-item text-muted small">No processor entries yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <script>
+                    (function() {
+                        const processorFilterInput = document.getElementById('processorFilter');
+                        const processorFilterDropdownBtn = document.getElementById('processorFilterDropdownBtn');
+                        const processorFilterDropdown = document.getElementById('processorFilterDropdown');
+                        const processorFilterOptions = document.querySelectorAll('.processor-filter-option');
+                        
+                        // Filter options based on input
+                        function filterProcessorFilterOptions() {
+                            const searchText = processorFilterInput.value.toLowerCase();
+                            processorFilterOptions.forEach(function(option) {
+                                const optionText = option.getAttribute('data-value').toLowerCase();
+                                if (searchText === '' || optionText.includes(searchText)) {
+                                    option.style.display = '';
+                                } else {
+                                    option.style.display = 'none';
+                                }
+                            });
+                        }
+                        
+                        // Show dropdown on input focus
+                        processorFilterInput.addEventListener('focus', function() {
+                            processorFilterDropdown.style.display = 'block';
+                            filterProcessorFilterOptions();
+                        });
+                        
+                        // Filter and show dropdown as user types
+                        processorFilterInput.addEventListener('input', function() {
+                            processorFilterDropdown.style.display = 'block';
+                            filterProcessorFilterOptions();
+                        });
+                        
+                        // Toggle dropdown on button click
+                        processorFilterDropdownBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            processorFilterInput.focus();
+                            processorFilterDropdown.style.display = processorFilterDropdown.style.display === 'none' ? 'block' : 'none';
+                            filterProcessorFilterOptions();
+                        });
+                        
+                        // Select option
+                        processorFilterOptions.forEach(function(option) {
+                            option.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                processorFilterInput.value = this.getAttribute('data-value');
+                                processorFilterDropdown.style.display = 'none';
+                                processorFilterInput.focus();
+                            });
+                        });
+                        
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const isClickInside = processorFilterDropdown.contains(e.target) || 
+                                                  processorFilterInput.contains(e.target) || 
+                                                  processorFilterDropdownBtn.contains(e.target);
+                            if (!isClickInside) {
+                                processorFilterDropdown.style.display = 'none';
+                            }
+                        });
+                    })();
+                    </script>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="ram" 
+                           placeholder="RAM" value="{{ request.GET.ram }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="hdd" 
+                           placeholder="HDD" value="{{ request.GET.hdd }}">
+                </div>
+                <div class="col-md-2">
+                    <div style="position: relative; width: 100%;">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm" id="osFilter" name="os" 
+                                   placeholder="OS" value="{{ request.GET.os }}" autocomplete="off">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" id="osDropdownBtn" 
+                                    title="Show OS list">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div id="osDropdown" class="dropdown-menu show" style="display: none; max-height: 200px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                            {% for os_value in unique_os_list %}
+                            <a class="dropdown-item os-option" href="#" data-value="{{ os_value }}">{{ os_value }}</a>
+                            {% endfor %}
+                            {% if not unique_os_list %}
+                            <span class="dropdown-item text-muted">No OS values yet. Add an asset first.</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <script>
+                    (function() {
+                        const osFilterInput = document.getElementById('osFilter');
+                        const osDropdownBtn = document.getElementById('osDropdownBtn');
+                        const osDropdown = document.getElementById('osDropdown');
+                        const osOptions = document.querySelectorAll('.os-option');
+                        
+                        // Filter options based on input
+                        function filterOSOptions() {
+                            const searchText = osFilterInput.value.toLowerCase();
+                            osOptions.forEach(function(option) {
+                                const optionText = option.getAttribute('data-value').toLowerCase();
+                                if (searchText === '' || optionText.includes(searchText)) {
+                                    option.style.display = '';
+                                } else {
+                                    option.style.display = 'none';
+                                }
+                            });
+                        }
+                        
+                        // Show dropdown on input focus
+                        osFilterInput.addEventListener('focus', function() {
+                            osDropdown.style.display = 'block';
+                            filterOSOptions();
+                        });
+                        
+                        // Filter and show dropdown as user types
+                        osFilterInput.addEventListener('input', function() {
+                            osDropdown.style.display = 'block';
+                            filterOSOptions();
+                        });
+                        
+                        // Toggle dropdown on button click
+                        osDropdownBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            osFilterInput.focus();
+                            osDropdown.style.display = osDropdown.style.display === 'none' ? 'block' : 'none';
+                            filterOSOptions();
+                        });
+                        
+                        // Select option
+                        osOptions.forEach(function(option) {
+                            option.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                osFilterInput.value = this.getAttribute('data-value');
+                                osDropdown.style.display = 'none';
+                                osFilterInput.focus();
+                            });
+                        });
+                        
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const isClickInside = osDropdown.contains(e.target) || 
+                                                  osFilterInput.contains(e.target) || 
+                                                  osDropdownBtn.contains(e.target);
+                            if (!isClickInside) {
+                                osDropdown.style.display = 'none';
+                            }
+                        });
+                    })();
+                    </script>
+                </div>
+
+                <div class="col-md-2">
+                    <div style="position: relative; width: 100%;">
+                        <div class="input-group input-group-sm">
+                            <input type="text" class="form-control form-control-sm" id="msOfficeFilter" name="ms_office" 
+                                   placeholder="MS Office" value="{{ request.GET.ms_office }}" autocomplete="off">
+                            <button class="btn btn-outline-secondary btn-sm" type="button" id="msOfficeDropdownBtn" 
+                                    title="Show MS Office versions">
+                                <i class="bi bi-chevron-down"></i>
+                            </button>
+                        </div>
+                        <div id="msOfficeDropdown" class="dropdown-menu show" style="display: none; max-height: 200px; overflow-y: auto; width: 100%; position: absolute; z-index: 1050; left: 0; top: 100%; margin-top: 2px; right: 0;">
+                            {% for office_version in unique_ms_office_list %}
+                            <a class="dropdown-item ms-office-filter-option" href="#" data-value="{{ office_version }}">{{ office_version }}</a>
+                            {% endfor %}
+                            {% if not unique_ms_office_list %}
+                            <span class="dropdown-item text-muted small">No MS Office entries yet</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <script>
+                    (function() {
+                        const msOfficeFilterInput = document.getElementById('msOfficeFilter');
+                        const msOfficeDropdownBtn = document.getElementById('msOfficeDropdownBtn');
+                        const msOfficeDropdown = document.getElementById('msOfficeDropdown');
+                        const msOfficeOptions = document.querySelectorAll('.ms-office-filter-option');
+                        
+                        // Filter options based on input
+                        function filterMSOfficeOptions() {
+                            const searchText = msOfficeFilterInput.value.toLowerCase();
+                            msOfficeOptions.forEach(function(option) {
+                                const optionText = option.getAttribute('data-value').toLowerCase();
+                                if (searchText === '' || optionText.includes(searchText)) {
+                                    option.style.display = '';
+                                } else {
+                                    option.style.display = 'none';
+                                }
+                            });
+                        }
+                        
+                        // Show dropdown on input focus
+                        msOfficeFilterInput.addEventListener('focus', function() {
+                            msOfficeDropdown.style.display = 'block';
+                            filterMSOfficeOptions();
+                        });
+                        
+                        // Filter and show dropdown as user types
+                        msOfficeFilterInput.addEventListener('input', function() {
+                            msOfficeDropdown.style.display = 'block';
+                            filterMSOfficeOptions();
+                        });
+                        
+                        // Toggle dropdown on button click
+                        msOfficeDropdownBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            msOfficeFilterInput.focus();
+                            msOfficeDropdown.style.display = msOfficeDropdown.style.display === 'none' ? 'block' : 'none';
+                            filterMSOfficeOptions();
+                        });
+                        
+                        // Select option
+                        msOfficeOptions.forEach(function(option) {
+                            option.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                msOfficeFilterInput.value = this.getAttribute('data-value');
+                                msOfficeDropdown.style.display = 'none';
+                                msOfficeFilterInput.focus();
+                            });
+                        });
+                        
+                        // Close dropdown when clicking outside
+                        document.addEventListener('click', function(e) {
+                            const isClickInside = msOfficeDropdown.contains(e.target) || 
+                                                  msOfficeFilterInput.contains(e.target) || 
+                                                  msOfficeDropdownBtn.contains(e.target);
+                            if (!isClickInside) {
+                                msOfficeDropdown.style.display = 'none';
+                            }
+                        });
+                    })();
+                    </script>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="antivirus">
+                        <option value="">All Antivirus</option>
+                        <option value="yes" {% if request.GET.antivirus == 'yes' %}selected{% endif %}>Yes</option>
+                        <option value="no" {% if request.GET.antivirus == 'no' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="ip_address" 
+                           placeholder="IP Address" value="{{ request.GET.ip_address }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="hostname" 
+                           placeholder="Hostname" value="{{ request.GET.hostname }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="username" 
+                           placeholder="Username" value="{{ request.GET.username }}">
+                </div>
+
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="e1_user">
+                        <option value="">E1 User - All</option>
+                        <option value="true" {% if request.GET.e1_user == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.e1_user == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="e3_user">
+                        <option value="">E3 User - All</option>
+                        <option value="true" {% if request.GET.e3_user == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.e3_user == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="srilipi">
+                        <option value="">SRILIPI - All</option>
+                        <option value="true" {% if request.GET.srilipi == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.srilipi == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="photoshop">
+                        <option value="">Photoshop - All</option>
+                        <option value="true" {% if request.GET.photoshop == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.photoshop == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="indesign">
+                        <option value="">InDesign - All</option>
+                        <option value="true" {% if request.GET.indesign == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.indesign == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="illustrator">
+                        <option value="">Illustrator - All</option>
+                        <option value="true" {% if request.GET.illustrator == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.illustrator == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="corel_draw">
+                        <option value="">CorelDRAW - All</option>
+                        <option value="true" {% if request.GET.corel_draw == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.corel_draw == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="distiller">
+                        <option value="">Distiller - All</option>
+                        <option value="true" {% if request.GET.distiller == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.distiller == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select form-select-sm" name="newswrap">
+                        <option value="">Newswrap - All</option>
+                        <option value="true" {% if request.GET.newswrap == 'true' %}selected{% endif %}>Yes</option>
+                        <option value="false" {% if request.GET.newswrap == 'false' %}selected{% endif %}>No</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="idm_role" 
+                           placeholder="IDM Role" value="{{ request.GET.idm_role }}">
+                </div>
+
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="email" 
+                           placeholder="Official Email" value="{{ request.GET.email }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="sap_id" 
+                           placeholder="SAP ID" value="{{ request.GET.sap_id }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="finance_code" 
+                           placeholder="Finance Code" value="{{ request.GET.finance_code }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="po_number" 
+                           placeholder="PO Number" value="{{ request.GET.po_number }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="invoice_number" 
+                           placeholder="Invoice Number" value="{{ request.GET.invoice_number }}">
+                </div>
+                <div class="col-md-2">
+                    <input type="text" class="form-control form-control-sm" name="serial_number_filter" 
+                           placeholder="Serial Number" value="{{ request.GET.serial_number_filter }}">
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-success">
+                        <i class="bi bi-funnel-fill"></i> Apply Advanced Filters
+                    </button>
+                    <a href="{% url 'tracker:asset_list' %}" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-arrow-clockwise"></i> Clear Filters
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Toggle Advanced Filters Button -->
+        <div class="mt-3">
+            <button class="btn btn-sm btn-outline-secondary" id="toggleAdvancedBtn" onclick="toggleAdvancedFilters()">
+                <i class="bi bi-sliders"></i> Show Advanced Filters
+            </button>
+        </div>
     </div>
 </div>
+
+<script>
+function toggleAdvancedFilters() {
+    const container = document.getElementById('advancedFiltersContainer');
+    const btn = document.getElementById('toggleAdvancedBtn');
+    
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        btn.innerHTML = '<i class="bi bi-sliders"></i> Hide Advanced Filters';
+    } else {
+        container.style.display = 'none';
+        btn.innerHTML = '<i class="bi bi-sliders"></i> Show Advanced Filters';
+    }
+}
+
+// Show advanced filters if any filter is applied
+window.addEventListener('load', function() {
+    const params = new URLSearchParams(window.location.search);
+    const advancedFilterKeys = ['cpu_make', 'model', 'processor', 'ram', 'hdd', 'os', 'ms_office', 
+                               'antivirus', 'ip_address', 'hostname', 'username', 'e1_user', 'e3_user', 'srilipi', 
+                               'photoshop', 'indesign', 'illustrator', 'corel_draw', 'distiller', 
+                               'newswrap', 'idm_role', 'email', 'sap_id', 'finance_code', 
+                               'po_number', 'invoice_number', 'serial_number_filter'];
+    
+    for (let key of advancedFilterKeys) {
+        if (params.has(key) && params.get(key) !== '') {
+            document.getElementById('advancedFiltersContainer').style.display = 'block';
+            document.getElementById('toggleAdvancedBtn').innerHTML = '<i class="bi bi-sliders"></i> Hide Advanced Filters';
+            break;
+        }
+    }
+});
+</script>
 
 <!-- Assets Table -->
 <div class="card">

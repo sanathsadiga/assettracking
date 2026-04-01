@@ -1,0 +1,174 @@
+{% extends 'tracker/base.html' %}
+
+{% block title %}Add Asset - Asset Tracking System{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h1>Add New Asset</h1>
+    <p class="text-muted">Create a new asset in the system</p>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Asset Details</h5>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            Asset Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               placeholder="e.g., Dell Laptop" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" 
+                                  rows="3" placeholder="Asset description..."></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" id="serial_number" 
+                                   name="serial_number" placeholder="e.g., SN123456">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="category" class="form-label">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="category" name="category" required>
+                                <option value="">-- Select Category --</option>
+                                {% for category in categories %}
+                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">
+                                Location <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="location" name="location" required>
+                                <option value="">-- Select Location --</option>
+                                {% for location in locations %}
+                                <option value="{{ location.id }}">{{ location.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information Section -->
+                    <div class="card mt-4 border-info">
+                        <div class="card-header bg-info bg-opacity-10">
+                            <h6 class="mb-0"><i class="bi bi-currency-rupee"></i> Financial Information</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="purchase_date" class="form-label">
+                                        Purchase Date <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" class="form-control" id="purchase_date" 
+                                           name="purchase_date" placeholder="YYYY-MM-DD" required>
+                                    <small class="text-muted">Date when the asset was purchased</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="purchase_cost" class="form-label">
+                                        Purchase Cost (₹) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" class="form-control" id="purchase_cost" 
+                                           name="purchase_cost" step="0.01" placeholder="e.g., 50000" required>
+                                    <small class="text-muted">Original purchase price</small>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="depreciation_rate" class="form-label">Annual Depreciation Rate (%)</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="depreciation_rate" 
+                                           name="depreciation_rate" step="0.01" value="0" 
+                                           placeholder="e.g., 5" min="0" max="100">
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <small class="text-muted">Annual depreciation (e.g., 5 for 5% per year)</small>
+                            </div>
+
+                            <div class="alert alert-light border">
+                                <small class="text-muted">
+                                    <strong>Example:</strong> If you buy an asset for ₹100 on 23-03-2026 with 5% depreciation:
+                                    <ul class="mb-0 mt-2">
+                                        <li>On 23-03-2026: Value = ₹100 (at creation)</li>
+                                        <li>On 23-03-2027: Value = ₹95 (5% depreciated)</li>
+                                        <li>On 23-03-2028: Value = ₹90.25 (5% more depreciation)</li>
+                                    </ul>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Note:</strong> Asset ID and Barcode will be automatically generated after asset creation.
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Create Asset
+                        </button>
+                        <a href="{% url 'tracker:asset_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Asset Creation Info</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Workflow</h6>
+                <ol class="small">
+                    <li class="mb-2">Fill in asset details</li>
+                    <li class="mb-2">Click "Create Asset"</li>
+                    <li class="mb-2">System generates unique Asset ID (e.g., ASSET0001)</li>
+                    <li class="mb-2">Barcode = Asset ID automatically</li>
+                    <li class="mb-2">Print and stick barcode on asset</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">Required Fields</h5>
+            </div>
+            <div class="card-body">
+                <ul class="small list-unstyled">
+                    <li><i class="bi bi-check-circle text-success"></i> Asset Name</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Category</li>
+                    <li><i class="bi bi-check-circle text-success"></i> Location</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

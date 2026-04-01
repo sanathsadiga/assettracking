@@ -137,6 +137,134 @@ class AssetListView(LoginRequiredMixin, ListView):
         if location_filter:
             assets = assets.filter(location_id=location_filter)
         
+        # Advanced Laptop/Desktop Filters
+        cpu_make = self.request.GET.get('cpu_make')
+        if cpu_make:
+            assets = assets.filter(cpu_make__icontains=cpu_make)
+        
+        model = self.request.GET.get('model')
+        if model:
+            assets = assets.filter(model__icontains=model)
+        
+        processor = self.request.GET.get('processor')
+        if processor:
+            assets = assets.filter(processor__icontains=processor)
+        
+        ram = self.request.GET.get('ram')
+        if ram:
+            assets = assets.filter(ram__icontains=ram)
+        
+        hdd = self.request.GET.get('hdd')
+        if hdd:
+            assets = assets.filter(hdd__icontains=hdd)
+        
+        os_filter = self.request.GET.get('os')
+        if os_filter:
+            assets = assets.filter(os__icontains=os_filter)
+        
+        ms_office = self.request.GET.get('ms_office')
+        if ms_office:
+            assets = assets.filter(ms_office_version__icontains=ms_office)
+        
+        antivirus = self.request.GET.get('antivirus')
+        if antivirus:
+            assets = assets.filter(antivirus=antivirus)
+        
+        ip_address = self.request.GET.get('ip_address')
+        if ip_address:
+            assets = assets.filter(ip_address__icontains=ip_address)
+        
+        hostname = self.request.GET.get('hostname')
+        if hostname:
+            assets = assets.filter(hostname__icontains=hostname)
+        
+        username = self.request.GET.get('username')
+        if username:
+            assets = assets.filter(username__icontains=username)
+        
+        # Boolean filters for software
+        e1_user = self.request.GET.get('e1_user')
+        if e1_user == 'true':
+            assets = assets.filter(e1_user=True)
+        elif e1_user == 'false':
+            assets = assets.filter(e1_user=False)
+        
+        e3_user = self.request.GET.get('e3_user')
+        if e3_user == 'true':
+            assets = assets.filter(e3_user=True)
+        elif e3_user == 'false':
+            assets = assets.filter(e3_user=False)
+        
+        srilipi = self.request.GET.get('srilipi')
+        if srilipi == 'true':
+            assets = assets.filter(srilipi=True)
+        elif srilipi == 'false':
+            assets = assets.filter(srilipi=False)
+        
+        photoshop = self.request.GET.get('photoshop')
+        if photoshop == 'true':
+            assets = assets.filter(photoshop=True)
+        elif photoshop == 'false':
+            assets = assets.filter(photoshop=False)
+        
+        indesign = self.request.GET.get('indesign')
+        if indesign == 'true':
+            assets = assets.filter(indesign=True)
+        elif indesign == 'false':
+            assets = assets.filter(indesign=False)
+        
+        illustrator = self.request.GET.get('illustrator')
+        if illustrator == 'true':
+            assets = assets.filter(illustrator=True)
+        elif illustrator == 'false':
+            assets = assets.filter(illustrator=False)
+        
+        corel_draw = self.request.GET.get('corel_draw')
+        if corel_draw == 'true':
+            assets = assets.filter(corel_draw=True)
+        elif corel_draw == 'false':
+            assets = assets.filter(corel_draw=False)
+        
+        distiller = self.request.GET.get('distiller')
+        if distiller == 'true':
+            assets = assets.filter(distiller=True)
+        elif distiller == 'false':
+            assets = assets.filter(distiller=False)
+        
+        newswrap = self.request.GET.get('newswrap')
+        if newswrap == 'true':
+            assets = assets.filter(newswrap=True)
+        elif newswrap == 'false':
+            assets = assets.filter(newswrap=False)
+        
+        idm_role = self.request.GET.get('idm_role')
+        if idm_role:
+            assets = assets.filter(idm_role__icontains=idm_role)
+        
+        email = self.request.GET.get('email')
+        if email:
+            assets = assets.filter(official_email__icontains=email)
+        
+        sap_id = self.request.GET.get('sap_id')
+        if sap_id:
+            assets = assets.filter(sap_id__icontains=sap_id)
+        
+        finance_code = self.request.GET.get('finance_code')
+        if finance_code:
+            assets = assets.filter(finance_asset_code__icontains=finance_code)
+        
+        po_number = self.request.GET.get('po_number')
+        if po_number:
+            assets = assets.filter(po_number__icontains=po_number)
+        
+        invoice_number = self.request.GET.get('invoice_number')
+        if invoice_number:
+            assets = assets.filter(invoice_number__icontains=invoice_number)
+        
+        serial_number_filter = self.request.GET.get('serial_number_filter')
+        if serial_number_filter:
+            assets = assets.filter(serial_number__icontains=serial_number_filter)
+        
         return assets.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -145,6 +273,9 @@ class AssetListView(LoginRequiredMixin, ListView):
         context['locations'] = Location.objects.all()
         context['search_query'] = self.request.GET.get('q', '')
         context['is_admin'] = self.request.user.is_staff
+        context['unique_os_list'] = Asset.get_unique_os_list()
+        context['unique_ms_office_list'] = Asset.get_unique_ms_office_list()
+        context['unique_processor_list'] = Asset.get_unique_processor_list()
         return context
 
 
@@ -185,6 +316,9 @@ class AddAssetView(LoginRequiredMixin, TemplateView):
         context['categories'] = Category.objects.all()
         context['locations'] = Location.objects.all()
         context['users'] = User.objects.filter(is_active=True)
+        context['unique_os_list'] = Asset.get_unique_os_list()
+        context['unique_ms_office_list'] = Asset.get_unique_ms_office_list()
+        context['unique_processor_list'] = Asset.get_unique_processor_list()
         return context
 
     def post(self, request, *args, **kwargs):
@@ -201,6 +335,18 @@ class AddAssetView(LoginRequiredMixin, TemplateView):
             if not purchase_cost_str:
                 raise ValueError("Purchase Cost is required")
             
+            # Check asset_id generation method
+            auto_generate_asset_id = request.POST.get('auto_generate_asset_id') == 'on'
+            manual_asset_id = request.POST.get('asset_id', '').strip() if not auto_generate_asset_id else None
+            
+            # If manual, validate that asset_id is provided
+            if not auto_generate_asset_id and not manual_asset_id:
+                raise ValueError("Asset ID is required when not auto-generating")
+            
+            # Check if manual asset_id already exists
+            if manual_asset_id and Asset.objects.filter(asset_id=manual_asset_id).exists():
+                raise ValueError(f"Asset ID '{manual_asset_id}' already exists")
+            
             # Get financial data
             depreciation_rate_str = request.POST.get('depreciation_rate')
             
@@ -214,17 +360,67 @@ class AddAssetView(LoginRequiredMixin, TemplateView):
             if depreciation_rate_str:
                 depreciation_rate = Decimal(depreciation_rate_str)
             
-            asset = Asset.objects.create(
-                name=request.POST.get('name'),
-                description=request.POST.get('description'),
-                serial_number=request.POST.get('serial_number'),
-                category_id=request.POST.get('category'),
-                location_id=request.POST.get('location'),
-                purchase_date=purchase_date,
-                purchase_cost=purchase_cost,
-                depreciation_rate=depreciation_rate,
-                created_by=request.user
-            )
+            # Prepare asset creation data
+            asset_data = {
+                'name': request.POST.get('name'),
+                'description': request.POST.get('description'),
+                'serial_number': request.POST.get('serial_number'),
+                'category_id': request.POST.get('category'),
+                'location_id': request.POST.get('location'),
+                'department_id': request.POST.get('department'),
+                'purchase_date': purchase_date,
+                'purchase_cost': purchase_cost,
+                'depreciation_rate': depreciation_rate,
+                'created_by': request.user,
+                'asset_id_auto_generated': auto_generate_asset_id,
+            }
+            
+            # Add manual asset_id if provided
+            if manual_asset_id:
+                asset_data['asset_id'] = manual_asset_id
+                asset_data['barcode'] = manual_asset_id
+            
+            # Add laptop/desktop specific fields if category is Laptop or Desktop
+            category_id = request.POST.get('category')
+            if category_id:
+                category = Category.objects.get(id=category_id)
+                if category.name.lower() in ['laptop', 'desktop', 'pc']:
+                    asset_data['cpu_make'] = request.POST.get('cpu_make')
+                    asset_data['model'] = request.POST.get('model')
+                    asset_data['processor'] = request.POST.get('processor')
+                    asset_data['ram'] = request.POST.get('ram')
+                    asset_data['hdd'] = request.POST.get('hdd')
+                    asset_data['os'] = request.POST.get('os')
+                    asset_data['ms_office_version'] = request.POST.get('ms_office_version')
+                    asset_data['ip_address'] = request.POST.get('ip_address')
+                    asset_data['hostname'] = request.POST.get('hostname')
+                    asset_data['new_hostname'] = request.POST.get('new_hostname')
+                    asset_data['e1_user'] = request.POST.get('e1_user') == 'on'
+                    asset_data['e3_user'] = request.POST.get('e3_user') == 'on'
+                    asset_data['antivirus'] = request.POST.get('antivirus', 'no')
+                    asset_data['srilipi'] = request.POST.get('srilipi') == 'on'
+                    asset_data['photoshop'] = request.POST.get('photoshop') == 'on'
+                    asset_data['indesign'] = request.POST.get('indesign') == 'on'
+                    asset_data['illustrator'] = request.POST.get('illustrator') == 'on'
+                    asset_data['corel_draw'] = request.POST.get('corel_draw') == 'on'
+                    asset_data['distiller'] = request.POST.get('distiller') == 'on'
+                    asset_data['newswrap'] = request.POST.get('newswrap') == 'on'
+                    asset_data['idm_role'] = request.POST.get('idm_role')
+                    asset_data['username'] = request.POST.get('username')
+                    asset_data['official_email'] = request.POST.get('official_email')
+                    asset_data['timescale_id'] = request.POST.get('timescale_id')
+                    asset_data['sap_id'] = request.POST.get('sap_id')
+                    asset_data['installation_date'] = request.POST.get('installation_date') or None
+                    asset_data['warranty_expiry_date'] = request.POST.get('warranty_expiry_date') or None
+                    asset_data['po_number'] = request.POST.get('po_number')
+                    asset_data['invoice_number'] = request.POST.get('invoice_number')
+                    asset_data['finance_asset_code'] = request.POST.get('finance_asset_code')
+            
+            # Add common fields
+            asset_data['status'] = request.POST.get('status', 'available')
+            asset_data['remarks'] = request.POST.get('remarks')
+            
+            asset = Asset.objects.create(**asset_data)
             
             # Log creation
             financial_info = ""
