@@ -394,7 +394,6 @@ class AddAssetView(LoginRequiredMixin, TemplateView):
                     asset_data['ms_office_version'] = request.POST.get('ms_office_version')
                     asset_data['ip_address'] = request.POST.get('ip_address')
                     asset_data['hostname'] = request.POST.get('hostname')
-                    asset_data['new_hostname'] = request.POST.get('new_hostname')
                     asset_data['e1_user'] = request.POST.get('e1_user') == 'on'
                     asset_data['e3_user'] = request.POST.get('e3_user') == 'on'
                     asset_data['antivirus'] = request.POST.get('antivirus', 'no')
@@ -408,7 +407,6 @@ class AddAssetView(LoginRequiredMixin, TemplateView):
                     asset_data['idm_role'] = request.POST.get('idm_role')
                     asset_data['username'] = request.POST.get('username')
                     asset_data['official_email'] = request.POST.get('official_email')
-                    asset_data['timescale_id'] = request.POST.get('timescale_id')
                     asset_data['sap_id'] = request.POST.get('sap_id')
                     asset_data['installation_date'] = request.POST.get('installation_date') or None
                     asset_data['warranty_expiry_date'] = request.POST.get('warranty_expiry_date') or None

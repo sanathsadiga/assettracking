@@ -105,7 +105,7 @@
                         <div class="mb-3">
                             <div class="form-check form-switch">
                                 <input class="form-check-input" type="checkbox" id="auto_generate_asset_id" 
-                                       name="auto_generate_asset_id" checked onchange="toggleAssetIdInput()">
+                                       name="auto_generate_asset_id" onchange="toggleAssetIdInput()">
                                 <label class="form-check-label" for="auto_generate_asset_id">
                                     Auto-generate Asset ID (System will create unique ID automatically)
                                 </label>
@@ -115,7 +115,7 @@
                             </small>
                         </div>
 
-                        <div id="manualAssetIdSection" style="display: none;">
+                        <div id="manualAssetIdSection" style="display: block;">
                             <div class="mb-3">
                                 <label for="asset_id" class="form-label">
                                     Asset ID / Barcode <span class="text-danger">*</span>
@@ -586,14 +586,6 @@
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="new_hostname" class="form-label">New Hostname</label>
-                                <input type="text" class="form-control" id="new_hostname" 
-                                       name="new_hostname" placeholder="New hostname to assign">
-                            </div>
-                        </div>
-
                         <!-- User Information -->
                         <h6 class="form-section-title mt-4"><i class="bi bi-person"></i> User Information</h6>
                         
@@ -615,11 +607,6 @@
                                 <label for="idm_role" class="form-label">IDM Role</label>
                                 <input type="text" class="form-control" id="idm_role" 
                                        name="idm_role" placeholder="e.g., Admin, User">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="timescale_id" class="form-label">TimeScale ID</label>
-                                <input type="text" class="form-control" id="timescale_id" 
-                                       name="timescale_id" placeholder="TimeScale ID">
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="sap_id" class="form-label">SAP ID</label>

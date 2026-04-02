@@ -196,7 +196,7 @@
         {% endif %}
 
         <!-- Network & Identification -->
-        {% if asset.ip_address or asset.hostname or asset.new_hostname %}
+        {% if asset.ip_address or asset.hostname %}
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-wifi"></i> Network & Identification</h5>
@@ -215,19 +215,13 @@
                         <p><code>{{ asset.hostname }}</code></p>
                     </div>
                     {% endif %}
-                    {% if asset.new_hostname %}
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">New Hostname</label>
-                        <p><code>{{ asset.new_hostname }}</code></p>
-                    </div>
-                    {% endif %}
                 </div>
             </div>
         </div>
         {% endif %}
 
         <!-- User Information -->
-        {% if asset.username or asset.official_email or asset.idm_role or asset.timescale_id or asset.sap_id %}
+        {% if asset.username or asset.official_email or asset.idm_role or asset.sap_id %}
         <div class="card mb-4">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-person"></i> User Information</h5>
@@ -250,12 +244,6 @@
                     <div class="col-md-6 mb-3">
                         <label class="text-muted small">IDM Role</label>
                         <p>{{ asset.idm_role }}</p>
-                    </div>
-                    {% endif %}
-                    {% if asset.timescale_id %}
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">TimeScale ID</label>
-                        <p>{{ asset.timescale_id }}</p>
                     </div>
                     {% endif %}
                     {% if asset.sap_id %}

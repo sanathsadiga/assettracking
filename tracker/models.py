@@ -64,7 +64,7 @@ class Asset(models.Model):
 
     # Asset ID (can be manually entered or auto-generated)
     asset_id = models.CharField(max_length=50, unique=True, db_index=True)
-    asset_id_auto_generated = models.BooleanField(default=True, help_text="Was asset_id automatically generated?")
+    asset_id_auto_generated = models.BooleanField(default=False, help_text="Was asset_id automatically generated?")
     
     # Barcode (same as asset_id for simplicity)
     barcode = models.CharField(max_length=50, unique=True, db_index=True)
@@ -99,7 +99,6 @@ class Asset(models.Model):
     ms_office_version = models.TextField(blank=True, null=True, help_text="MS Office Version (e.g., MICROSOFT-OFFICE VERSION-7, MICROSOFT-OFFICE VERSION-O365)")
     ip_address = models.CharField(max_length=50, blank=True, null=True, help_text="IP Address")
     hostname = models.CharField(max_length=100, blank=True, null=True, help_text="Hostname")
-    new_hostname = models.CharField(max_length=100, blank=True, null=True, help_text="New Hostname")
     
     # Software/Tools
     e1_user = models.BooleanField(default=False, help_text="E1 User")
@@ -117,7 +116,6 @@ class Asset(models.Model):
     idm_role = models.CharField(max_length=100, blank=True, null=True, help_text="IDM Role")
     username = models.CharField(max_length=100, blank=True, null=True, help_text="Username")
     official_email = models.EmailField(blank=True, null=True, help_text="Official Email ID")
-    timescale_id = models.CharField(max_length=100, blank=True, null=True, help_text="TimeScale ID")
     sap_id = models.CharField(max_length=100, blank=True, null=True, help_text="SAP ID")
     
     # Warranty & Maintenance
